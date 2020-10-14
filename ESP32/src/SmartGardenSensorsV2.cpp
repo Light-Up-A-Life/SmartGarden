@@ -306,7 +306,6 @@ void WiFiConnectFromLib() {
   Serial.println("No WiFi successful connection AT ALL!! ");
 }
 
-
 /************************************/
 /*****   Google API connection   ****/
 /************************************/
