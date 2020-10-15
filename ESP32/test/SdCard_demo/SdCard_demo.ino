@@ -1,8 +1,9 @@
-    /////////////////////////////////////////////////////////////////
-   //              Arduino SD Card Tutorial     v1.00             //
-  //       Get the latest version of the code here:              //
- //         http://educ8s.tv/arduino-sd-card-tutorial           //
-/////////////////////////////////////////////////////////////////
+ /*  PINOUT ARDUINO NANO
+ CS   -->  D10
+ SCK  -->  D13
+ MOSI -->  D12
+ MISO -->  D11
+*/
 #include <SD.h>
 #include <SPI.h>
 
@@ -14,23 +15,44 @@ void setup()
 {
 
   Serial.begin(115200);
+  Serial.println("Initializing SD Card . . .");
 
-  initializeSD();
-  createFile("test.txt");
-  writeToFile("This is sample text!");
-  closeFile();
+  if(!SD.begin()){
+      Serial.println("Initializing SD Card failed");
+      return;
+  }
 
-  openFile("prefs.txt");
-  Serial.println(readLine());
-  Serial.println(readLine());
-  closeFile();
+  Serial.println("Initializing succesfull");
+
+  file = SD.open("testlog.txt",FILE_WRITE);
+  file.close();
+
+  Serial.println("File created!");
 }
 
 void loop()
 {
+  if(SD.exists("testlog.txt")){
+    Serial.println("File Exist");
+
+    file = SD.open("testlog.txt", FILE_WRITE);
+
+    if(file){
+        Serial.println("Writing");
+        file.println("Time: " + String(millis()));
+        file.close();
+    }
+    else{
+      Serial.println("NO Writing..");
+    }
+  }
+  else{
+    Serial.println("File not exist");
+  }
+  delay(1000);
 }
 
-bool initializeSD()
+/* bool initializeSD()
 {
   Serial.println("Initializing SD card...");
   pinMode(CS_PIN, OUTPUT);
@@ -45,7 +67,7 @@ bool initializeSD()
     Serial.println("SD card initialization failed");
     return false;
   }
-  */
+  //
   int count = 1;
   while(!SD.begin(CS_PIN)){
     Serial.print("Trying to mount the sd card: Attempt no.");
@@ -125,4 +147,4 @@ String readLine()
     }
   }
   return "";
-}
+}*/
