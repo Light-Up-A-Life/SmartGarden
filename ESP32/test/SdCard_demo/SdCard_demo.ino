@@ -43,7 +43,7 @@ void loop()
         file.close();
     }
     else{
-      Serial.println("NO Writing..");
+      Serial.println("No Writing..");
     }
   }
   else{
