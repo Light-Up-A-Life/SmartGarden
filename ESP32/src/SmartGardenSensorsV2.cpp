@@ -2,18 +2,15 @@
 //              Smart Garden              //
 // -------------------------------------- //
 
-// By El Jose & El Kike (JK Inc.)
-// Last update: 28/06/2020
+// By El Jose & El Kike & El Alejo (JKA Inc.)
+// Last update: 15/11/2020
 
-#define VERSION "1.0.0"
-
+#define VERSION "1.0.1"
 // -------------------------------------- //
 //                Libraries               //
 // -------------------------------------- //
-#include "FS.h"
-#include "SD.h"
+#include <SD.h>
 #include <SPI.h>
-
 #include "time.h"
 
 // #include <Vcc.h>
@@ -32,7 +29,6 @@
 #include <sstream>
 #include <vector>
 #include <string>
-
 
 // -------------------------------------- //
 //              Constants                 //
@@ -113,17 +109,17 @@ bool BF_GSM_GPS = false;
 //               GSM MODULE               //
 // -------------------------------------- //
 
-struct GSM {
-   int sec;   
-   int min;   
-   int hour;  
-   int day;  
-   int mon;   
-   int year;
-   float longitude;
-   float latitude;  
+struct GSM
+{
+  int sec;
+  int min;
+  int hour;
+  int day;
+  int mon;
+  int year;
+  float longitude;
+  float latitude;
 } gsmModule;
-
 
 // -------------------------------------- //
 //               Time events              //
@@ -368,7 +364,6 @@ void sendDataToGoogle(String params)
   DPRINTLN(url);
 
   http.begin(url, root_ca); //Specify the URL and certificate
-  int httpCode = http.GET();
   String httpJSONobjString = http.getString();
   http.end();
 }
@@ -377,27 +372,31 @@ void sendDataToGoogle(String params)
 /*****       GSM SETUP           ****/
 /************************************/
 
-bool initGNSModule(){
+bool initGNSModule()
+{
   SerialAT.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
   Serial.println("\n Initializing GSM module ...");
   //delay(3000);
   Serial.println("Communication AT check ...");
   String res = "";
   int countAT = 0;
-  do{
+  do
+  {
     Serial2.println("AT"); //Send commands AT to module GSM
     res = Serial2.readString();
     Serial.println("res AT:" + res);
     countAT++;
-  }while(res.indexOf("OK")<0 && countAT < MAX_ITER_GSM);
-  
-  if (countAT==MAX_ITER_GSM){
-    Serial.printf("Failure after %d times  \n",countAT);
+  } while (res.indexOf("OK") < 0 && countAT < MAX_ITER_GSM);
+
+  if (countAT == MAX_ITER_GSM)
+  {
+    Serial.printf("Failure after %d times  \n", countAT);
     return false;
   }
-  else{
+  else
+  {
     BF_GSM_AT = true;
-    Serial.printf("Successful after %d times  \n",countAT);
+    Serial.printf("Successful after %d times  \n", countAT);
     //Power on GNS
     Serial.println("\n Getting the CGNSPWR");
     Serial2.println("AT+CGNSPWR=1");
@@ -407,7 +406,8 @@ bool initGNSModule(){
     //Getting message
     Serial.println("\n Getting the CGNSINF");
     countAT = 0;
-    do{
+    do
+    {
       Serial2.println("AT+CGNSINF");
       res = Serial2.readString();
       Serial.println("res AT+CGNSINF" + res);
@@ -415,9 +415,10 @@ bool initGNSModule(){
       //Split message
       std::stringstream ss(res.c_str());
       std::vector<std::string> v;
-      while (ss.good()) {
+      while (ss.good())
+      {
         std::string substr;
-        getline(ss, substr,',');
+        getline(ss, substr, ',');
         v.push_back(substr);
       }
 
@@ -426,46 +427,49 @@ bool initGNSModule(){
       String lon = v[4].c_str();
       gsmModule.latitude = lat.toFloat();
       gsmModule.longitude = lon.toFloat();
-      gsmModule.year = timeStamp.substring(0,4).toInt();
-      gsmModule.mon = timeStamp.substring(4,6).toInt();
-      gsmModule.day = timeStamp.substring(6,8).toInt();
-      gsmModule.hour = timeStamp.substring(8,10).toInt();
-      gsmModule.min = timeStamp.substring(10,12).toInt();
-      gsmModule.sec = timeStamp.substring(12,14).toInt();
+      gsmModule.year = timeStamp.substring(0, 4).toInt();
+      gsmModule.mon = timeStamp.substring(4, 6).toInt();
+      gsmModule.day = timeStamp.substring(6, 8).toInt();
+      gsmModule.hour = timeStamp.substring(8, 10).toInt();
+      gsmModule.min = timeStamp.substring(10, 12).toInt();
+      gsmModule.sec = timeStamp.substring(12, 14).toInt();
 
-      Serial.printf( "Time GNS Module %d:%d:%d %d-%d-%d \n", gsmModule.hour,gsmModule.min, gsmModule.sec, gsmModule.day,  gsmModule.mon, gsmModule.year);
-      Serial.printf( "GPS GNS Module  Latitude %.2f, Longitude %.2f \n", gsmModule.latitude,gsmModule.longitude);
-     //Example msg +CGNSINF: 1,1,20201025145004.000,43.613070,1.440523,137.600,0.39,148.6,1,,1.2,1.5,0.9,,8,7,,,36,,
-      if(gsmModule.year>2015){
+      Serial.printf("Time GNS Module %d:%d:%d %d-%d-%d \n", gsmModule.hour, gsmModule.min, gsmModule.sec, gsmModule.day, gsmModule.mon, gsmModule.year);
+      Serial.printf("GPS GNS Module  Latitude %.2f, Longitude %.2f \n", gsmModule.latitude, gsmModule.longitude);
+      //Example msg +CGNSINF: 1,1,20201025145004.000,43.613070,1.440523,137.600,0.39,148.6,1,,1.2,1.5,0.9,,8,7,,,36,,
+      if (gsmModule.year > 2015)
+      {
         BF_GSM_TIME = true;
-        Serial.printf("Successful time after %d times  \n",countAT);
+        Serial.printf("Successful time after %d times  \n", countAT);
       }
-      else{
-        Serial.printf("Faillure time after %d times  \n",countAT);
+      else
+      {
+        Serial.printf("Faillure time after %d times  \n", countAT);
       }
-      if(gsmModule.latitude>0){
+      if (gsmModule.latitude > 0)
+      {
         BF_GSM_GPS = true;
-        Serial.printf("Successful after %d times  \n",countAT);
+        Serial.printf("Successful after %d times  \n", countAT);
       }
-      else{
-        Serial.printf("Faillure GPS after %d times  \n",countAT);
+      else
+      {
+        Serial.printf("Faillure GPS after %d times  \n", countAT);
       }
-    }while((!BF_GSM_TIME || !BF_GSM_GPS) && countAT < MAX_ITER_GSM );
-    return true;  
+    } while ((!BF_GSM_TIME || !BF_GSM_GPS) && countAT < MAX_ITER_GSM);
+    return true;
   }
 }
 
-
-bool gsmModuleStatus(){
-    Serial2.println("AT"); //Send commands AT to module GSM
-    String res = Serial2.readString();
-    DPRINTLN("res AT:" + res);
-    return res.indexOf("OK")<0;
+bool gsmModuleStatus()
+{
+  Serial2.println("AT"); //Send commands AT to module GSM
+  String res = Serial2.readString();
+  DPRINTLN("res AT:" + res);
+  return res.indexOf("OK") < 0;
 }
-void updateGSMStatus(){
-
+void updateGSMStatus()
+{
 }
-
 
 void printLocalTime()
 {
@@ -694,16 +698,16 @@ float approximateValues(int pin, String type, int sampling, bool bFailure) //USE
 {
   if (bFailure)
   {
-    ERRORPRINTLN("");
+    /*ERRORPRINTLN("");
     ERRORPRINT("Reading of type '");
     ERRORPRINT(type);
     ERRORPRINT("' in pin ");
     ERRORPRINT(pin);
-    ERRORPRINTLN(" not available.");
+    ERRORPRINTLN(" not available.");*/
     return 0;
   }
 
-  float sensorValues[sampling]; // TODO: NOT NECESSARY! But it works now. For later we can rewrite
+  //float sensorValues[sampling]; // TODO: NOT NECESSARY! But it works now. For later we can rewrite
   float sum = 0;
   float rawValue;
 
@@ -802,14 +806,20 @@ bool initSD()
 
 void writeSD(String fileToWrite, String textToWrite)
 {
-  file = SD.open(fileToWrite, FILE_WRITE);
+  file = SD.open(fileToWrite, FILE_APPEND);
   if (file)
   {
-    Serial.println(F("Writing on "));
-    Serial.print(fileToWrite);
-    file.println(textToWrite);
+    Serial.print(F("Writing on "));
+    Serial.println(fileToWrite);
+    if (file.println(textToWrite))
+    {
+      ALERTPRINTLN("Append message done");
+    }
+    else
+    {
+      ERRORPRINTLN("Message dont append");
+    }
     file.close();
-    Serial.println(F("Done !"));
   }
   else
   {
@@ -926,7 +936,6 @@ void handleEvents() //Checks the time-based events and acts consequently (can ad
     //DPRINTLN(getClock());
 
     timeToWrite = extractTimestamp();
-    int maximum = 0, minimum = 1024, average = 0, sum = 0;
     stringToWriteSD = "";
 
     DPRINTLN("Reacting to minute passed");
@@ -971,7 +980,7 @@ void handleEvents() //Checks the time-based events and acts consequently (can ad
 
     DPRINT("String to write on SD: ");
     DPRINTLN(stringToWriteSD);
-    writeSD("RMS_Test.txt", stringToWriteSD);
+    writeSD("/RMS_Test.txt", stringToWriteSD);
 
     // Reinitialization of MINUTES arrays and variables
     indexCount = 0;
@@ -1031,7 +1040,7 @@ void sendAlert(int pinSensor, String priority) //LOW, MEDIUM, HIGH
   //  }
 }
 
-bool computeValues(int threshold, int value, int pinSensor)
+void computeValues(int threshold, int value, int pinSensor)
 {
   if (value >= threshold)
   {
@@ -1088,9 +1097,8 @@ void setup()
     Serial.println("GSM module NOT active");
   }
 
-
   bool B0_GNS = initGNSModule();
-
+  DPRINTLN("B0_GNS flag"+ B0_GNS);
   // Init and get the time by server
   // configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   // printLocalTime();
