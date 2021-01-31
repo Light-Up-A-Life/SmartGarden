@@ -13,26 +13,29 @@
 // -------------------------------------- //
 //                Libraries               //
 // -------------------------------------- //
+
+// SD card libraries
 #include "FS.h"
 #include "SD.h"
 #include <SPI.h>
 
-
+// Overall time measurement lib
 #include "time.h"
 
-// #include <Vcc.h>
-
+// Sensors libs
 #include <OneWire.h>            // For the DS18B20 (External temp sensor)
 #include <DallasTemperature.h>  // For the DS18B20 (External temp sensor)
-
 
 #include <Wire.h>               // For the BMP180 (Internal temp sensor & pressure)
 #include <Adafruit_BMP085.h>    // For the BMP180 (Internal temp sensor & pressure)
 
+// Connection libs
 #include <WiFi.h>               // For WiFi connection
 #include <HTTPClient.h>         // For WiFi connection
 #include <WebServer.h>
 #include "HTMLSite.h"         // For Webpage Interface(HTML)
+
+// General libs
 #include "Debugging.h"
 
 
@@ -61,7 +64,7 @@ float anemometerVoltageMin = 0.42;
 // -------------------------------------- //
 
 // Pin selection
-const int PIN_DS18B20_ONEWIRE = 25;
+const int PIN_DS18B20_ONEWIRE = 4;
 
 // Setup a oneWire instance to communicate with any OneWire devices
 OneWire oneWire(PIN_DS18B20_ONEWIRE);
@@ -114,20 +117,20 @@ bool BF_SDCARD = false;
 // -------------------------------------- //
 
 // Duration values for the different events
-const long SECOND_MS = 1000;
-const long MINUTE_MS = 10000;     // Real value: 60k
+const long SECOND_MS = 1000;        // Real value: 1k
+const long MINUTE_MS = 10000;       // Real value: 60k
 const long HOUR_MS   = 600000000;   // Real value: 3.6M
 
 unsigned long previousMillisMinute = 0, previousMillisHour = 0, previousMillisSec = 0;
 bool minutePassedEvent, hourPassedEvent, secPassedEvent;
 
 const int SIZE_STACK_SENSORS = 60;
-float minuteValuesTempInt[SIZE_STACK_SENSORS];    //Create one for every sensor that we want to store
-float minuteValuesTempExt[SIZE_STACK_SENSORS];    //Create one for every sensor that we want to store
-float minuteValuesAnemo[SIZE_STACK_SENSORS];      //Create one for every sensor that we want to store
-float minuteValuesSoilMoist1[SIZE_STACK_SENSORS];  //Create one for every sensor that we want to store
-float minuteValuesSoilMoist2[SIZE_STACK_SENSORS];  //Create one for every sensor that we want to store
-float minuteValuesPressure[SIZE_STACK_SENSORS];   //Create one for every sensor that we want to store
+float minuteValuesTempInt[SIZE_STACK_SENSORS];      //Create one for every sensor that we want to store
+float minuteValuesTempExt[SIZE_STACK_SENSORS];      //Create one for every sensor that we want to store
+float minuteValuesAnemo[SIZE_STACK_SENSORS];        //Create one for every sensor that we want to store
+float minuteValuesSoilMoist1[SIZE_STACK_SENSORS];   //Create one for every sensor that we want to store
+float minuteValuesSoilMoist2[SIZE_STACK_SENSORS];   //Create one for every sensor that we want to store
+float minuteValuesPressure[SIZE_STACK_SENSORS];     //Create one for every sensor that we want to store
 int indexCount = 0;
 
 // -------------------------------------- //
@@ -139,14 +142,13 @@ const int SDCARD_INIT_MAX_ITER = 5;
 
 #define SDCARD_CS_PIN 5
 // const int SDCARD_CS_PIN =  5;      // white
-const int SDCARD_MOSI_PIN =  23;   // blue
-const int SDCARD_MISO_PIN =  19;   // green
-const int SDCARD_SCK_PIN =  18;     // yellow (or CLK)
+const int SDCARD_MOSI_PIN =  23;      // blue
+const int SDCARD_MISO_PIN =  19;      // green
+const int SDCARD_SCK_PIN =  18;       // yellow (or CLK)
 
 // -------------------------------------- //
 //              SMS logging               //
 // -------------------------------------- //
-
 
 // Serial Serial2(5, 6); //The sim card is connected to here
 String data, timestamp, timeToWrite, stringToWriteSD, smsToWrite; //Do I really need all of them?
@@ -155,9 +157,10 @@ int hourAverageAnem, hourMaxAnem;
 int hourAverageTempExt, hourMaxTempExt;
 int hourAverageTempInt, hourMaxTempInt;
 
-const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 0;
-const int   daylightOffset_sec = 3600;
+// Temporary solution for time acquisition via ntp server
+  const char* ntpServer = "pool.ntp.org";
+  const long  gmtOffset_sec = 0;
+  const int   daylightOffset_sec = 3600;
 
 bool B0_SMS = false;
 // const String numberSMS = "+33620337258";
@@ -196,10 +199,11 @@ WebServer server(80);    //Defining HTTP Port 80
 
 #define WLAN_MAX_COUNT  10
 
-#define WLAN_LIB_N      3
-String WLAN_NAME_LIB[]  = {"Jose's House" , "Kike's House"        , "Jose's House"};
-String WLAN_SSID_LIB[]  = {"SFR-5538"     , "SFR_6608"            , "SFR-5538"};
-String WLAN_PASS_LIB[]  = {"VHYWP9A2PVDU" , "2cwt45yriv2urm57trbx", "VHYWP9A2PVDU"};
+// TODO ! Change with WiFiMulti lib
+#define WLAN_LIB_N      2
+String WLAN_NAME_LIB[]  = {"Jose's House"       , "Kike's House"        };
+String WLAN_SSID_LIB[]  = {"Bbox-EA8E0CBE"      , "SFR_6608"            };
+String WLAN_PASS_LIB[]  = {"u39jR5LiFEpxbfCXGS" , "2cwt45yriv2urm57trbx"};
 
 
 WiFiClientSecure client;
@@ -347,6 +351,7 @@ void sendDataToGoogle(String params) {
   String url = "https://script.google.com/macros/s/" + GOOGLE_SCRIPT_ID + "/exec?" + params;
   DPRINTLN(url);
 
+  // Making connection ...
   http.begin(url, root_ca); //Specify the URL and certificate
   int httpCode = http.GET();
   String httpJSONobjString = http.getString();
@@ -360,8 +365,8 @@ void sendDataToGoogle(String params) {
 String sendAT(String command)
 {
   String response = "";
-  // SerialGSM.println(command);
-  SerialGSM.print("AT+CCLK?");
+  SerialGSM.println(command);
+  //SerialGSM.print("AT+CCLK?");
   SerialGSM.write( byte(13) );
   // aguardamos até que haja resposta do SIM800L
   // while(!SerialGSM.available());
@@ -373,7 +378,6 @@ String sendAT(String command)
 
 void printLocalTime()
 {
-
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo)){
     Serial.println("Failed to obtain time");
@@ -420,7 +424,7 @@ String extractTimestamp(){
   }
 }
 
-const char* const  getTimeStamp(){
+const char* const getTimeStamp(){
 
   char timeStamp[50];
   Serial2.print("AT+CCLK?");      //SIM900 AT command to get time stamp
@@ -709,7 +713,6 @@ float getSensorData(int pin, String type) //Need to account for other sensors th
   return sensorValue;
 }
 
-
 float approximateValues(int pin, String type, int sampling, bool bFailure) //USED ONCE A SECOND into minuteValues[]
 {
   if (bFailure){
@@ -744,7 +747,6 @@ float approximateValues(int pin, String type, int sampling, bool bFailure) //USE
   return sum / sampling ;
 }
 
-
 struct report reportFunc(float values[], int indexCount)
 {
   report myReport;
@@ -764,7 +766,6 @@ struct report reportFunc(float values[], int indexCount)
 
   return myReport;
 }
-
 
 /************************************/
 /*****          SD card          ****/
@@ -815,44 +816,104 @@ bool initSD()
 
 }
 
-void writeSD(String fileToWrite, String textToWrite)
-{
+
+void writeSD(String fileToWrite, String textToWrite){
   file = SD.open(fileToWrite, FILE_WRITE);
-  if (file)
-  {
-    Serial.println(F("Writing on "));
-    Serial.print(fileToWrite);
+  if (file){
+    DPRINTLN(F("Writing on "));
+    DPRINTLN(fileToWrite);
+    // Writing on file 
     file.println(textToWrite);
     file.close();
-    Serial.println(F("Done !"));
+    DPRINTLN(F("Done !"));
   }
-  else
-  {
-    Serial.println(F("Error opening the file RMS_Test.txt"));
+  else{
+    Serial.println(F("Error opening the file"));
   }
 }
 
-void readSD(String fileToRead)
-{
+void appendSD(String fileToWrite, String textToWrite){
+  file = SD.open(fileToWrite, FILE_APPEND);
+  if (file){
+    DPRINTLN(F("Writing on "));
+    DPRINTLN(fileToWrite);
+    // Appending on file 
+    file.println(textToWrite);
+    file.close();
+    DPRINTLN(F("Done !"));
+  }
+  else{
+    Serial.println(F("Error opening the file"));
+  }
+}
+
+String readSD(String fileToRead){
+  // Initializing variables 
+  String fileText = "";
   file = SD.open(fileToRead);
-  if (file)
-  {
-    Serial.println(F("RMS_Test.txt : ")); //Change the name of the file (if new name, arduino will create the file on the SD)
 
-    while (file.available())
-    {
-      Serial.write(file.read());
+  // Reading file
+  if (file){
+    DPRINTF("Reading '%s'", fileToRead.c_str()); 
+
+    while (file.available()){
+      char byteRead = (char)file.read()
+      DEEPDPRINT(byteRead);
+      fileText += byteRead;
     }
-
     file.close();
   }
-  else
-  {
-    Serial.println(F("Error opening "));
+  else{
+    Serial.print(F("Error opening "));
     Serial.print(fileToRead);
   }
+  return fileText;
 }
 
+/************************************/
+/*****       Unitary tests       ****/
+/************************************/
+
+void testSDcard(){
+  String fileForTest= "/testSmartGarden.txt";
+  String textToWrite= "Hola! I'm a test for the SD card !";
+  String textToWrite2= "\n\nI'm a second test for the SD card !";
+  
+  writeSD(fileForTest,textToWrite);
+  appendSD(fileForTest,textToWrite2);
+
+  String fileRead =  readSD(fileForTest);
+  Serial.print("File read:\nSTART\n");
+  Serial.print(fileRead);
+  Serial.print("\nEND");
+}
+
+void testBMPSensor(){
+
+  if (BF_BMP_1)
+    Serial.println("BMP sensor is not well initialized!! ");
+
+  float testTemp = approximateValues(0, "BMP_TEMP",   SAMPLING_N, BF_BMP_1);
+  float testPres = approximateValues(0, "BMP_PRES",   SAMPLING_N, BF_BMP_1);
+
+  Serial.printf("Temp (BMP): %.2f", testTemp);
+  Serial.printf("Pres (BMP): %.2f", testPres);
+  delay(2000);
+}
+
+void testDSSensor(){
+
+  float testTempDS = approximateValues(PIN_DS18B20_ONEWIRE,  "DS",         SAMPLING_N, BF_DS_EXT_TEMP_1); //For every sensor
+  Serial.printf("Temp (DS): %.2f", testTempDS);
+  delay(2000);
+
+}
+
+
+void testGSMmodule(){
+
+
+}
 
 /************************************/
 /*****   Time events functions   ****/
@@ -1023,7 +1084,7 @@ void handleEvents() //Checks the time-based events and acts consequently (can ad
 }
 
 /************************************/
-/***** .        Alerts         . ****/
+/*****          Alerts           ****/
 /************************************/
 
 void sendAlert(int pinSensor, String priority) //LOW, MEDIUM, HIGH
@@ -1068,18 +1129,23 @@ void setup()
   Serial.println("Welcome to Smart Garden! ");
 
   // DS18B20 sensor
+  Serial.printf("Setting up external temp sensor (DS18B20)... \n");
   sensorDS18B20.begin();
 
+
   // BMP085 sensor
+  Serial.printf("Setting up preasure sensor (BMP180)... ");
   if (!bmp.begin()) {
     Serial.println("Could not find a valid BMP085/BMP180 sensor, check wiring!");
     BF_BMP_1 = true;
   }
 
   // SD setup
+  Serial.printf("Setting up SD card ... ");
   BF_SDCARD = initSD();
 
   // WiFi connection
+  Serial.printf("Setting up WiFi connection ... ");
   if (SmartConfigOn){
    WiFiConnectSmartConfig();
   }
@@ -1088,29 +1154,34 @@ void setup()
   }
 
   // Server initialization for local Web page and OTA
+  Serial.printf("Setting up OTA and Web server ... ");
   serverInit();
 
   // Initialization GSM module
   // Serial2.begin(115200);
+  /*
+  Serial.println("Initializing GSM module ...");
   SerialAT.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
   delay(3000);
-  Serial.println("Initializing GSM module ...");
+  
+  // With TinyGSM lib
+    if (!modem.restart()){
+      Serial.print("GSM could not be init with TinyGsm");
+    }
+    else{
+      Serial.print("GSM INITIALIZED with TinyGsm");
+      String name = modem.getModemName();
+      Serial.print("Modem Name: ");
+      Serial.println(name);
 
-  if (!modem.restart()) {
-    Serial.print("GSM could not be init with TinyGsm");
-  }
-  else{
-    Serial.print("GSM INITIALIZED with TinyGsm");
-    String name = modem.getModemName();
-    Serial.print("Modem Name: ");
-    Serial.println(name);
+      String modemInfo = modem.getModemInfo();
+      Serial.print("Modem Info: ");
+      Serial.println(modemInfo);
+    }
+  // -----------
 
-    String modemInfo = modem.getModemInfo();
-    Serial.print("Modem Info: ");
-    Serial.println(modemInfo);
-  }
-
-  if (Serial2.available()){
+  // With SerialAT connection 
+  if (SerialAT.available()){
     Serial.println("GSM module active");
   }
   else{
@@ -1129,17 +1200,76 @@ void setup()
   // Init and get the time .. machete!
   // configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   // printLocalTime();
+  */
 
   Serial.println("Ready to garden! ");
 
 
+  // Tests 
+  testSDcard();
+
 }
+
 
 /************************************/
 /*****          loop()           ****/
 /************************************/
 void loop()
 {
-  timeCount();
-  handleEvents();
+  // timeCount();
+  // handleEvents();
+  
+  // Unitary tests:
+  testBMPSensor();
+  testDSSensor();
+
+  //int potValue = analogRead(34);
+  //Serial.println("");
+  //Serial.println(potValue);
+  //delay(500);
+
+}
+
+
+/************************************/
+/*****          Sandbox          ****/
+/************************************/
+
+void setupBMP() {
+  Serial.begin(115200);
+  if (!bmp.begin()) {
+	Serial.println("Could not find a valid BMP085 sensor, check wiring!");
+	while (1) {}
+  }
+}
+  
+void loopBMP() {
+    Serial.print("Temperature = ");
+    Serial.print(bmp.readTemperature());
+    Serial.println(" *C");
+    
+    Serial.print("Pressure = ");
+    Serial.print(bmp.readPressure());
+    Serial.println(" Pa");
+    
+    // Calculate altitude assuming 'standard' barometric
+    // pressure of 1013.25 millibar = 101325 Pascal
+    Serial.print("Altitude = ");
+    Serial.print(bmp.readAltitude());
+    Serial.println(" meters");
+
+    Serial.print("Pressure at sealevel (calculated) = ");
+    Serial.print(bmp.readSealevelPressure());
+    Serial.println(" Pa");
+
+  // you can get a more precise measurement of altitude
+  // if you know the current sea level pressure which will
+  // vary with weather and such. If it is 1015 millibars
+  // that is equal to 101500 Pascals.
+    Serial.print("Real altitude = ");
+    Serial.print(bmp.readAltitude(101500));
+    Serial.println(" meters");
+    
+    Serial.println();
+    delay(500);
 }
