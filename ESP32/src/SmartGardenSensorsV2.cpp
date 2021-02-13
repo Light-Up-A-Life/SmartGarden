@@ -38,6 +38,11 @@
 // General libs
 #include "Debugging.h"
 
+// GSM module libs
+#include <sstream>
+#include <vector>
+#include <string>
+
 
 // -------------------------------------- //
 //              Constants                 //
@@ -111,6 +116,26 @@ bool BF_SOILM_2 = false;
 bool BF_ANEMO_1 = false;
 bool BF_DS_EXT_TEMP_1 = false;
 bool BF_SDCARD = false;
+bool BF_GSM_AT = false;
+bool BF_GSM_TIME = false;
+bool BF_GSM_GPS = false;
+
+// -------------------------------------- //
+//               GSM MODULE               //
+// -------------------------------------- //
+
+struct GSM {
+   int sec;   
+   int min;   
+   int hour;  
+   int day;  
+   int mon;   
+   int year;
+   float longitude;
+   float latitude;  
+} gsmModule;
+
+const int MAX_ITER_GSM = 60;
 
 // -------------------------------------- //
 //               Time events              //
@@ -162,7 +187,9 @@ int hourAverageTempInt, hourMaxTempInt;
   const long  gmtOffset_sec = 0;
   const int   daylightOffset_sec = 3600;
 
+bool B0_GNS = false;
 bool B0_SMS = false;
+
 // const String numberSMS = "+33620337258";
 const String numberSMS = "+33770451126";
 
@@ -359,27 +386,105 @@ void sendDataToGoogle(String params) {
 }
 
 /************************************/
-/*****        SMS logging        ****/
+/*****       GSM SETUP           ****/
 /************************************/
 
-String sendAT(String command)
-{
-  String response = "";
-  SerialGSM.println(command);
-  //SerialGSM.print("AT+CCLK?");
-  SerialGSM.write( byte(13) );
-  // aguardamos até que haja resposta do SIM800L
-  // while(!SerialGSM.available());
-  delay(2000);
+bool initGNSModule(){
 
-  response = SerialGSM.readString();
-  return response;
+  SerialAT.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
+  //delay(3000);
+
+  Serial.println("Communication AT check ...");
+  String res = "";
+  int countAT = 0;
+  do{
+    Serial2.println("AT"); //Send commands AT to module GSM
+    res = Serial2.readString();
+    Serial.println("res AT:" + res);
+    countAT++;
+  }while(res.indexOf("OK")<0 && countAT < MAX_ITER_GSM);
+  
+  if (countAT==MAX_ITER_GSM){
+    Serial.printf("Failure after %d times  \n",countAT);
+    return false;
+  }
+  else{
+    BF_GSM_AT = true;
+    Serial.printf("Successful after %d times  \n",countAT);
+    //Power on GNS
+    Serial.println("\n Getting the CGNSPWR");
+    Serial2.println("AT+CGNSPWR=1");
+    res = Serial2.readString();
+    Serial.println("res AT+CGNSPWR:" + res);
+
+    //Getting message
+    Serial.println("\n Getting the CGNSINF");
+    countAT = 0;
+    do{
+      Serial2.println("AT+CGNSINF");
+      res = Serial2.readString();
+      Serial.println("res AT+CGNSINF" + res);
+      countAT++;
+      //Split message
+      std::stringstream ss(res.c_str());
+      std::vector<std::string> v;
+      while (ss.good()) {
+        std::string substr;
+        getline(ss, substr,',');
+        v.push_back(substr);
+      }
+
+      String timeStamp = v[2].c_str();
+      String lat = v[3].c_str();
+      String lon = v[4].c_str();
+      gsmModule.latitude = lat.toFloat();
+      gsmModule.longitude = lon.toFloat();
+      gsmModule.year = timeStamp.substring(0,4).toInt();
+      gsmModule.mon = timeStamp.substring(4,6).toInt();
+      gsmModule.day = timeStamp.substring(6,8).toInt();
+      gsmModule.hour = timeStamp.substring(8,10).toInt();
+      gsmModule.min = timeStamp.substring(10,12).toInt();
+      gsmModule.sec = timeStamp.substring(12,14).toInt();
+
+      Serial.printf( "Time GNS Module %d:%d:%d %d-%d-%d \n", gsmModule.hour,gsmModule.min, gsmModule.sec, gsmModule.day,  gsmModule.mon, gsmModule.year);
+      Serial.printf( "GPS GNS Module  Latitude %.2f, Longitude %.2f \n", gsmModule.latitude,gsmModule.longitude);
+     //Example msg +CGNSINF: 1,1,20201025145004.000,43.613070,1.440523,137.600,0.39,148.6,1,,1.2,1.5,0.9,,8,7,,,36,,
+      if(gsmModule.year>2015){
+        BF_GSM_TIME = true;
+        Serial.printf("Successful time after %d times  \n",countAT);
+      }
+      else{
+        Serial.printf("Faillure time after %d times  \n",countAT);
+      }
+      if(gsmModule.latitude>0){
+        BF_GSM_GPS = true;
+        Serial.printf("Successful after %d times  \n",countAT);
+      }
+      else{
+        Serial.printf("Faillure GPS after %d times  \n",countAT);
+      }
+    }while((!BF_GSM_TIME || !BF_GSM_GPS) && countAT < MAX_ITER_GSM );
+    return true;  
+  }
+}
+
+bool gsmModuleStatus(){
+    Serial2.println("AT"); //Send commands AT to module GSM
+    String res = Serial2.readString();
+    DPRINTLN("res AT:" + res);
+    return res.indexOf("OK")<0;
+}
+
+void updateGSMStatus(){
+
 }
 
 void printLocalTime()
 {
+
   struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
+  if (!getLocalTime(&timeinfo))
+  {
     Serial.println("Failed to obtain time");
     return;
   }
@@ -404,153 +509,27 @@ void printLocalTime()
 
   Serial.println("Time variables");
   char timeHour[3];
-  strftime(timeHour,3, "%H", &timeinfo);
+  strftime(timeHour, 3, "%H", &timeinfo);
   Serial.println(timeHour);
   char timeWeekDay[10];
-  strftime(timeWeekDay,10, "%A", &timeinfo);
+  strftime(timeWeekDay, 10, "%A", &timeinfo);
   Serial.println(timeWeekDay);
   Serial.println();
 }
 
-String extractTimestamp(){
+String extractTimestamp()
+{
   struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
+  if (!getLocalTime(&timeinfo))
+  {
     return "null";
   }
-  else{
+  else
+  {
     char timeBuffer[20];
-    strftime(timeBuffer,20,"%d-%m-%Y %H:%M:%S",&timeinfo);
+    strftime(timeBuffer, 20, "%d-%m-%Y %H:%M:%S", &timeinfo);
     return String(timeBuffer);
   }
-}
-
-const char* const getTimeStamp(){
-
-  char timeStamp[50];
-  Serial2.print("AT+CCLK?");      //SIM900 AT command to get time stamp
-  Serial2.print( (char)26 );
-
-  delay(2000);
-
-  if (Serial2.available()>0){
-      int i = 0;
-      while (Serial2.available()>0){
-        timeStamp[i]=(Serial2.read());
-        Serial.println(timeStamp[i]);
-        i++;
-      }
-  }
-  else{
-    Serial.println("Serial 2 not available! ");
-  }
-
-  int years = (((timeStamp[25])-48)*10)+((timeStamp[26])-48);
-  int months = (((timeStamp[22])-48)*10)+((timeStamp[23])-48);
-  int days  = (((timeStamp[19])-48)*10)+((timeStamp[20])-48);
-  int hours = (((timeStamp[28])-48)*10)+((timeStamp[29])-48);
-  int mins = (((timeStamp[31])-48)*10)+((timeStamp[32])-48);
-  int secs = (((timeStamp[34])-48)*10)+((timeStamp[35])-48);
-  //YOUR CODE HERE
-
-  return timeStamp;
-}
-
-void getGPS(){
-  float lat2      = 0;
-  float lon2      = 0;
-  float speed2    = 0;
-  float alt2      = 0;
-  int   vsat2     = 0;
-  int   usat2     = 0;
-  float accuracy2 = 0;
-  int   year2     = 0;
-  int   month2    = 0;
-  int   day2      = 0;
-  int   hour2     = 0;
-  int   min2      = 0;
-  int   sec2      = 0;
-
-  if (modem.getGsmLocation(&lat2, &lon2, &accuracy2, &year2, &month2, &day2, &hour2,
-                             &min2, &sec2)){
-  /*if (modem.getGPS(&lat2, &lon2, &speed2, &alt2, &vsat2, &usat2, &accuracy2,
-                    &year2, &month2, &day2, &hour2, &min2, &sec2)) {
-                    */
-  Serial.println("Time from GPS");
-  Serial.println(hour2);
-  Serial.println(min2);
-  Serial.println(sec2);
-  }
-  else{
-    Serial.println("No sirve esta cotopla! ");
-  }
-}
-
-
-String getClock()
-{
-  //Serial2.println("AT+CLTS=1;&W"); //Sets the mode on a new module (UNCOMMENT IF YOU'RE USING IT ON A NEW MODULE)
-  //delay(100);
-  //Serial2.println("AT+CLTS?");
-  //delay(100);
-  //Serial2.println("AT+CLTS=?");
-  //delay(100);
-  /*Serial2.println("AT+CCLK?");
-  delay(100);
-  return Serial2.readStringUntil('\r'); //After the OK that finishes the command
-  */
-
-
-  Serial2.print("AT+CCLK?");
-  // Serial2.write( byte(13) );
-  delay(2000);
-
-  char timeStamp[50]; // int timeStamp[50];
-  String response = "";
-  Serial.println("");
-
-  int i = 0;
-  while (Serial2.available()>0){
-    timeStamp[i]=(Serial2.read());
-    response += timeStamp[i];
-    Serial.print(timeStamp[i]);
-    Serial.print(F("\t"));
-    i++;
-  }
-
-  Serial.println("");
-
-/*
-  String myStr = Serial2.readStringUntil('\r');
-  myStr = Serial2.readStringUntil('\r');
-  Serial.println("myStr");
-  Serial.println(myStr);
-  Serial.println("");
-
-  */
-
-
-
-  /*
-  int years = (((timeStamp[25])-48)*10)+((timeStamp[26])-48);
-  int months = (((timeStamp[22])-48)*10)+((timeStamp[23])-48);
-  int days  = (((timeStamp[19])-48)*10)+((timeStamp[20])-48);
-  int hours = (((timeStamp[28])-48)*10)+((timeStamp[29])-48);
-  int mins = (((timeStamp[31])-48)*10)+((timeStamp[32])-48);
-  int secs = (((timeStamp[34])-48)*10)+((timeStamp[35])-48);
-
-  char timestamp[80];
-  sprintf(timestamp, "%d:%d:%d %d-%d-%d ", hours, mins, secs, days, months, years);
-
-  */
-
-  /* String anotherStr = sendAT("AT+CLTS?");
-  Serial.println("anotherStr");
-  Serial.println(anotherStr);
-  Serial.println("");
-  */
-  // return anotherStr ;
-
-  return String(response);
 }
 
 String extractTimestamp2(String clockData)
@@ -568,18 +547,20 @@ String extractTimestamp2(String clockData)
 
 void sendMessage(String message) //Check if there is an error (or timeout) and store the values to send it next hour (care about memory)
 {
-  if (B0_SMS){
+  if (B0_SMS)
+  {
     DPRINTLN("Sending the SMS ...");
-    Serial2.println("AT+CMGF=1");  //Sets the GSM Module in Text Mode
+    Serial2.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
     delay(1000);
     Serial2.println("AT+CMGS=\"+33770451126\"\r"); // Replace x with mobile number
     delay(1000);
-    Serial2.println(message);// The SMS text you want to send
+    Serial2.println(message); // The SMS text you want to send
     delay(100);
-    Serial2.println((char)26);// ASCII code of CTRL+Z
+    Serial2.println((char)26); // ASCII code of CTRL+Z
     delay(1000);
   }
-  else {
+  else
+  {
     DPRINTLN("SMS messages have been deactivated. Check BO_SMS");
   }
 }
@@ -589,6 +570,7 @@ void receiveMessage()
   Serial2.println("AT+CNMI=2,2,0,0,0"); // AT Command to receive a live SMS
   delay(1000);
 }
+
 
 /************************************/
 /*****      HTTP/HTML       ****/
@@ -1158,49 +1140,15 @@ void setup()
   serverInit();
 
   // Initialization GSM module
-  // Serial2.begin(115200);
-  /*
   Serial.println("Initializing GSM module ...");
-  SerialAT.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
-  delay(3000);
-  
-  // With TinyGSM lib
-    if (!modem.restart()){
-      Serial.print("GSM could not be init with TinyGsm");
-    }
-    else{
-      Serial.print("GSM INITIALIZED with TinyGsm");
-      String name = modem.getModemName();
-      Serial.print("Modem Name: ");
-      Serial.println(name);
+  Serial2.begin(115200);
+  B0_GNS = initGNSModule();
 
-      String modemInfo = modem.getModemInfo();
-      Serial.print("Modem Info: ");
-      Serial.println(modemInfo);
-    }
-  // -----------
-
-  // With SerialAT connection 
-  if (SerialAT.available()){
-    Serial.println("GSM module active");
-  }
-  else{
-    Serial.println("GSM module NOT active");
-  }
-
-  // Serial.println("getClock function response: ");
-  // Serial.println(getClock());
-
-  Serial.println("getTimeStamp function response: ");
-  Serial.println(getTimeStamp());
-
-
-  getGPS();
 
   // Init and get the time .. machete!
   // configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   // printLocalTime();
-  */
+  
 
   Serial.println("Ready to garden! ");
 
