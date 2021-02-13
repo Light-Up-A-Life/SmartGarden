@@ -798,16 +798,20 @@ bool initSD()
 
 }
 
-
 void writeSD(String fileToWrite, String textToWrite){
   file = SD.open(fileToWrite, FILE_WRITE);
   if (file){
     DPRINTLN(F("Writing on "));
     DPRINTLN(fileToWrite);
+
     // Writing on file 
-    file.println(textToWrite);
+    if (file.println(textToWrite)){
+      DPRINTLN("Writing on SD card successful");
+    }
+    else{
+      ERRORPRINTLN("Unable to write on SD card");
+    }
     file.close();
-    DPRINTLN(F("Done !"));
   }
   else{
     Serial.println(F("Error opening the file"));
@@ -819,10 +823,15 @@ void appendSD(String fileToWrite, String textToWrite){
   if (file){
     DPRINTLN(F("Writing on "));
     DPRINTLN(fileToWrite);
+
     // Appending on file 
-    file.println(textToWrite);
+    if (file.println(textToWrite)){
+      DPRINTLN("Writing on SD card successful");
+    }
+    else{
+      ERRORPRINTLN("Unable to write on SD card");
+    }
     file.close();
-    DPRINTLN(F("Done !"));
   }
   else{
     Serial.println(F("Error opening the file"));
@@ -1153,7 +1162,7 @@ void setup()
   Serial.println("Ready to garden! ");
 
 
-  // Tests 
+  // Tests  - 
   testSDcard();
 
 }
@@ -1167,14 +1176,9 @@ void loop()
   // timeCount();
   // handleEvents();
   
-  // Unitary tests:
+  // Unitary tests - In loop
   testBMPSensor();
   testDSSensor();
-
-  //int potValue = analogRead(34);
-  //Serial.println("");
-  //Serial.println(potValue);
-  //delay(500);
 
 }
 

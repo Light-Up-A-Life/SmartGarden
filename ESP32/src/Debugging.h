@@ -32,7 +32,8 @@
 
 #ifdef ERRORPRINT
   #define ERRORPRINT(...)    Serial.print(__VA_ARGS__)
-  #define ERRORPRINTLN(...)  Serial.println(__VA_ARGS__)
+  #define ERRORPRINTLN(...)  Serial.printf("\x1b[31m %s \x1b[0m \n", __VA_ARGS__)
+  #define ALERTPRINTLN(...)  Serial.printf("\x1b[32m %s \x1b[0m \n", __VA_ARGS__)
 #else
   // define blank line
   #define ERRORPRINT(...)
