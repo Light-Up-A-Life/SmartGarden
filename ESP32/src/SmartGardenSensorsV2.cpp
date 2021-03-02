@@ -135,7 +135,7 @@ struct GSM {
    float latitude;  
 } gsmModule;
 
-const int MAX_ITER_GSM = 60;
+const int MAX_ITER_GSM = 5; //60
 
 // -------------------------------------- //
 //               Time events              //
@@ -906,6 +906,10 @@ void testGSMmodule(){
 
 }
 
+void testCurrentModule(){
+
+}
+
 /************************************/
 /*****   Time events functions   ****/
 /************************************/
@@ -1175,10 +1179,16 @@ void loop()
 {
   // timeCount();
   // handleEvents();
-  
+  //testSDcard();
   // Unitary tests - In loop
-  testBMPSensor();
-  testDSSensor();
+  //testBMPSensor();
+  //testDSSensor();
+  /*int analog = analogRead(33);
+  float voltage = float(analogRead(33))*3.3/4095.0;
+  float current = (voltage -2.5)/0.185;
+  Serial.printf("analoge %d voltage %.8f current %.2f \n",analog,voltage,current);
+  delay(1000);*/
+
 
 }
 
