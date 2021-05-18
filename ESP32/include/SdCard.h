@@ -8,8 +8,8 @@
 
 class SdCard : public Sensor{
   public:
-    SdCard(std::string name, int size_stack, std::map<int,std::string> pins);
-    bool setUp();
+    using Sensor::Sensor;
+    bool setUp() override;
     float getSensorData() override;
   private:
     const int MAX_ITER = 10;

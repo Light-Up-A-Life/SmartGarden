@@ -19,8 +19,8 @@ struct GSM {
 
 class GsmModule : public Sensor{
   public:
-    GsmModule(std::string name, int size_stack, std::map<int,std::string> pins, std::string data);
-    bool setUp();
+    using Sensor::Sensor;
+    bool setUp() override;
     float getSensorData() override;
     /*void printLocalTime();
     void sendMessage(String);

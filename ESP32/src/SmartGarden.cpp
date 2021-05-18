@@ -6,10 +6,10 @@
 #include "GsmModule.h"
 
 std::vector<Sensor*> listSensor;
-TempBmp180  t1 = TempBmp180("temp180_temperature",60,{{21,"bmp180_sda"},{22,"bmp180_scl"}},"Temperature");
-TempBmp180  t2 = TempBmp180("temp180_pressure",60,{{21,"bmp180_sda"},{22,"bmp180_scl"}},"Pressure");
-SdCard sd = SdCard("SdCard0",60,{{5,"sd_cs"},{18,"sd_clk"},{23,"sd_mosi"},{19,"sd_miso"}});
-GsmModule gsm = GsmModule("GsmModule",60,{{16,"gsm_tx"},{17,"gsm_rx"}},"Time");
+TempBmp180  t1 = TempBmp180("temp180_temperature","Temperature",{{21,"bmp180_sda"},{22,"bmp180_scl"}},60);
+TempBmp180  t2 = TempBmp180("temp180_pressure","Pressure",{{21,"bmp180_sda"},{22,"bmp180_scl"}},60);
+SdCard sd = SdCard("SdCard0","Storage",{{5,"sd_cs"},{18,"sd_clk"},{23,"sd_mosi"},{19,"sd_miso"}},60);
+GsmModule gsm = GsmModule("GsmModule","Time",{{16,"gsm_tx"},{17,"gsm_rx"}},60);
 
 
 
@@ -41,6 +41,7 @@ void timeCount() {
       float v = s->read(20);
       Serial.printf("name %s \t",s->name);
       Serial.printf("value %0.3f \n",v);
+      
     }
   }
 

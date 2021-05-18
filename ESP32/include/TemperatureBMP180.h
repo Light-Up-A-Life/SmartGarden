@@ -6,8 +6,8 @@
 
 class TempBmp180 : public Sensor{
   public:
-    TempBmp180(std::string name, int size_stack, std::map<int,std::string> pins, std::string data);
-    bool setUp();
+    using Sensor::Sensor;
+    bool setUp() override;
     float getSensorData() override;
   private:
     Adafruit_BMP085 bmp;

@@ -1,8 +1,11 @@
 #include "Sensor.h"
 
-Sensor::Sensor(std::string name, std::map<int,std::string> pins,int size_stack):
+using std::string;
+
+Sensor::Sensor(string name, string magn_type, std::map<int,string> pins,int size_stack):
   bFailure(false),
   name(name),
+  magnitude_type(magn_type),
   pins_(pins),
   it_mes_sec_(0),
   it_mes_min_(0){ 

@@ -1,9 +1,5 @@
 #include "GsmModule.h"
 
-GsmModule::GsmModule(std::string name, int size_stack, std::map<int,std::string> pins, std::string data):
-  Sensor::Sensor(name,pins,size_stack),
-  data_(data){}
-
 bool GsmModule::setUp(){
   Serial2.begin(115200, SERIAL_8N1, 16, 17); //TODO: Use pins variable
   //delay(3000);
@@ -12,7 +8,6 @@ bool GsmModule::setUp(){
   String res = "";
   int countAT = 0;
   bool BF_GSM_TIME = false;
-  bool BF_GSM_AT = false;
   bool BF_GSM_GPS = false;
   do{
     Serial2.println("AT"); //Send commands AT to module GSM
@@ -26,7 +21,6 @@ bool GsmModule::setUp(){
     return false;
   }
   else{
-    BF_GSM_AT = true;
     Serial.printf("Successful after %d times  \n",countAT);
     //Power on GNS
     Serial.println("\n Getting the CGNSPWR");

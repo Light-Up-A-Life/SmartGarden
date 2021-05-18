@@ -1,8 +1,5 @@
 #include "SdCard.h"
 
-SdCard::SdCard(std::string name, int size_stack, std::map<int,std::string> pins):
-  Sensor::Sensor(name,pins,size_stack){}
-
 bool SdCard::setUp(){
   Serial.println(F("Initializing SD card ..."));
   int counter = 0;
