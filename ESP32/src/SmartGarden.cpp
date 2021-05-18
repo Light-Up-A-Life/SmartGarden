@@ -2,10 +2,14 @@
 #include "time.h"
 #include "Sensor.h"
 #include "TemperatureBMP180.h"
+#include "SdCard.h"
+#include "GsmModule.h"
 
 std::vector<Sensor*> listSensor;
 TempBmp180  t1 = TempBmp180("temp180_temperature",60,{{21,"bmp180_sda"},{22,"bmp180_scl"}},"Temperature");
 TempBmp180  t2 = TempBmp180("temp180_pressure",60,{{21,"bmp180_sda"},{22,"bmp180_scl"}},"Pressure");
+SdCard sd = SdCard("SdCard0",60,{{5,"sd_cs"},{18,"sd_clk"},{23,"sd_mosi"},{19,"sd_miso"}});
+GsmModule gsm = GsmModule("GsmModule",60,{{16,"gsm_tx"},{17,"gsm_rx"}},"Time");
 
 
 
@@ -68,10 +72,20 @@ void setup (){
   else{
       Serial.println("setup not done t2");
   }
-  Serial.println("Welcome to Smart Garden");
+
+  /*if(sd.setUp()){
+    listSensor.push_back(&t2);
+    Serial.println("setup done sd card");
+  }
+  else{
+    Serial.println("setup not done sd card");
+  }
+  Serial.println("Welcome to Smart Garden");*/
+  gsm.setUp();
+
 }
 void loop(){
   delay(1000);
-  timeCount();
+  //timeCount();
   //Serial.println(listSensor.size());
 }

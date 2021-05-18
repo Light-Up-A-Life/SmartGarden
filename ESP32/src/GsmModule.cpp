@@ -1,23 +1,27 @@
 #include "GsmModule.h"
 
+GsmModule::GsmModule(std::string name, int size_stack, std::map<int,std::string> pins, std::string data):
+  Sensor::Sensor(name,pins,size_stack),
+  data_(data){}
 
-bool initGNSModule()
-{
-
-  SerialAT.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
+bool GsmModule::setUp(){
+  Serial2.begin(115200, SERIAL_8N1, 16, 17); //TODO: Use pins variable
   //delay(3000);
 
   Serial.println("Communication AT check ...");
   String res = "";
   int countAT = 0;
+  bool BF_GSM_TIME = false;
+  bool BF_GSM_AT = false;
+  bool BF_GSM_GPS = false;
   do{
     Serial2.println("AT"); //Send commands AT to module GSM
     res = Serial2.readString();
     Serial.println("res AT:" + res);
     countAT++;
-  }while(res.indexOf("OK")<0 && countAT < MAX_ITER_GSM);
+  }while(res.indexOf("OK")<0 && countAT < MAX_ITER);
   
-  if (countAT==MAX_ITER_GSM){
+  if (countAT==MAX_ITER){
     Serial.printf("Failure after %d times  \n",countAT);
     return false;
   }
@@ -46,7 +50,6 @@ bool initGNSModule()
         getline(ss, substr,',');
         v.push_back(substr);
       }
-
       String timeStamp = v[2].c_str();
       String lat = v[3].c_str();
       String lon = v[4].c_str();
@@ -76,11 +79,17 @@ bool initGNSModule()
       else{
         Serial.printf("Faillure GPS after %d times  \n",countAT);
       }
-    }while((!BF_GSM_TIME || !BF_GSM_GPS) && countAT < MAX_ITER_GSM );
+    }while((!BF_GSM_TIME || !BF_GSM_GPS) && countAT < MAX_ITER);
     return true;  
   }
 }
-void printLocalTime()
+
+float GsmModule::getSensorData(){
+  return 0.0;
+}
+
+
+/*void printLocalTime()
 {
 
   struct tm timeinfo;
@@ -176,4 +185,4 @@ String extractTimestamp2(String clockData)
   DPRINTLN(timestamp);
 
   return timestamp;
-}
+}*/

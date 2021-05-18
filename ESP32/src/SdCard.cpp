@@ -1,52 +1,42 @@
 #include "SdCard.h"
 
-bool initSD()
-{
+SdCard::SdCard(std::string name, int size_stack, std::map<int,std::string> pins):
+  Sensor::Sensor(name,pins,size_stack){}
 
+bool SdCard::setUp(){
   Serial.println(F("Initializing SD card ..."));
   int counter = 0;
-  bool statusSD = false;
-
+  bool bFailure = false;
   do{
-    statusSD = SD.begin();// SDCARD_CS_PIN
-
-    // Checking the output of the initialization
-    if (statusSD){
+    if (SD.begin()){
        Serial.println("SD card initiliazed");
       // Check if there is a card
       uint8_t cardType = SD.cardType();
       if(cardType == CARD_NONE) {
         Serial.println("No SD card attached");
+        bFailure = true;
         return false;
       }
-
-       return true;
+      bFailure = false;
+      return true;
     }
     else{
       Serial.println("Initialization failed ! Trying again... ");
       counter++;
+      bFailure = true;
       delay(1000);
     }
 
-  }while (!statusSD & (counter < SDCARD_INIT_MAX_ITER));
-
+  }while (bFailure & (counter < MAX_ITER));
   Serial.println("SDcard not available AT ALL");
-  return statusSD;
-
+  return false;
 }
-void writeSD(String fileToWrite, String textToWrite){
+float SdCard::getSensorData(){
+  return 0.0;
+}
+/*void writeSD(String fileToWrite, String textToWrite){
   file = SD.open(fileToWrite, FILE_WRITE);
-  if (file){
-    DPRINTLN(F("Writing on "));
-    DPRINTLN(fileToWrite);
-
-    // Writing on file 
-    if (file.println(textToWrite)){
-      DPRINTLN("Writing on SD card successful");
-    }
-    else{
-      ERRORPRINTLN("Unable to write on SD card");
-    }
+  if (file){ DPRINTLN(F("Writing on ")); DPRINTLN(fileToWrite); // Writing on file if (file.println(textToWrite)){ DPRINTLN("Writing on SD card successful"); } else{ ERRORPRINTLN("Unable to write on SD card"); }
     file.close();
   }
   else{
@@ -106,4 +96,4 @@ void testSDcard(){
   Serial.print("File read:\nSTART\n");
   Serial.print(fileRead);
   Serial.print("\nEND");
-}
+}*/
