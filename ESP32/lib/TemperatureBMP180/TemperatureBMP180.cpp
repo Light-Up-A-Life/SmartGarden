@@ -10,9 +10,8 @@ bool TempBmp180::setUp(){
 }
 
 float TempBmp180::getSensorData(){
-  if(data_== "Temperature")
+  if(magnitude_type== "Temperature")
     return bmp.readTemperature();
   else
     return bmp.readPressure();
-} 
-
+}

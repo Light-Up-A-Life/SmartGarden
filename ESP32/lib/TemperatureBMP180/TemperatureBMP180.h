@@ -13,7 +13,6 @@ class TempBmp180 : public Sensor{
     Adafruit_BMP085 bmp;
     std::string data_;
 };
-  
 #endif
 
 

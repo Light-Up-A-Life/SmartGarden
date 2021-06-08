@@ -39,7 +39,7 @@ void timeCount() {
     secPassedEvent = true;
     for(Sensor * s: listSensor){
       float v = s->read(20);
-      Serial.printf("name %s \t",s->name);
+      Serial.printf("name %s \t",s->name.c_str());
       Serial.printf("value %0.3f \n",v);
       
     }
@@ -57,6 +57,7 @@ void timeCount() {
     hourPassedEvent = true;
   }
 }
+
 void setup (){
   Serial.begin(115200);
   if(t1.setUp()){
@@ -66,13 +67,13 @@ void setup (){
   else{
       Serial.println("setup not done t1");
   }
-  if(t2.setUp()){
+  /*if(t2.setUp()){
     listSensor.push_back(&t2);
     Serial.println("setup done t2");
   }
   else{
       Serial.println("setup not done t2");
-  }
+  }*/
 
   /*if(sd.setUp()){
     listSensor.push_back(&t2);
@@ -82,11 +83,11 @@ void setup (){
     Serial.println("setup not done sd card");
   }
   Serial.println("Welcome to Smart Garden");*/
-  gsm.setUp();
+  //gsm.setUp();
 
 }
 void loop(){
   delay(1000);
-  //timeCount();
+  timeCount();
   //Serial.println(listSensor.size());
 }
