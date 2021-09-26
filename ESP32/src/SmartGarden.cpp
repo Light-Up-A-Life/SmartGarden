@@ -2,6 +2,8 @@
 #include "SdCard.h"
 #include "Sensor.h"
 #include "TemperatureBMP180.h"
+#include "SoilMoisture.h"
+
 #include "time.h"
 #include <SPI.h>
 
@@ -10,11 +12,13 @@ TempBmp180 t1 = TempBmp180("temp180_temperature", "Temperature",
                            {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, 60);
 TempBmp180 t2 = TempBmp180("temp180_pressure", "Pressure",
                            {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, 60);
+SoilMoisture s1 = SoilMoisture("soil_moisture_1","Moisture level",{{34,"soil_moisture_avot"}},60);
 SdCard sd = SdCard(
     "SdCard0", "Storage",
     {{5, "sd_cs"}, {18, "sd_clk"}, {23, "sd_mosi"}, {19, "sd_miso"}}, 60);
 GsmModule gsm =
     GsmModule("GsmModule", "Time", {{16, "gsm_tx"}, {17, "gsm_rx"}}, 60);
+
 
 QueueHandle_t queue;
 
@@ -57,7 +61,8 @@ void setup() {
   if (t1.setUp()) {
     listSensor.push_back(&t1);
     Serial.println("setup done t1");
-  } else {
+  } 
+  else {
     Serial.println("setup not done t1");
   }
 
@@ -67,6 +72,13 @@ void setup() {
   }
   else{
       Serial.println("setup not done t2");
+  }
+  if(s1.setUp()){
+    listSensor.push_back(&s1);
+    Serial.println("setup done s1");
+  } 
+  else {
+    Serial.println("setup not done s1");
   }
 
   /*if(sd.setUp()){
@@ -102,3 +114,11 @@ void loop() {
     }
   }
 }
+/*
+TODO:
+GPS as service
+Data each second
+enum queue option
+SD save 
+GSM get/request
+*/

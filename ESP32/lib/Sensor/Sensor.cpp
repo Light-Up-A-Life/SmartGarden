@@ -34,4 +34,9 @@ float Sensor::read(int sampling)
   return value; ;
 }
 
+const std::map<int, string> Sensor::getPins(){
+  return pins_;
+
+}
+
 
