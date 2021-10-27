@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <Arduino.h>
 
 using std::string;
 
@@ -19,6 +20,7 @@ class Sensor{
     float virtual getSensorData() = 0;
     bool virtual setUp() = 0;
     const std::map<int, string> getPins();
+    float callbackMinute(); 
 
   private:
     std::map<int, string> pins_;

@@ -1,7 +1,7 @@
 #ifndef SOILMOISTURE_H
 #define SOILMOISTURE_H
 #include "Sensor.h"
-#include <Arduino.h>
+
 
 class SoilMoisture : public Sensor{
   public:
