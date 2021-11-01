@@ -3,6 +3,7 @@
 #include "Sensor.h"
 #include "SoilMoisture.h"
 #include "TemperatureBMP180.h"
+#include "Display.h"
 
 #include "time.h"
 #include <SPI.h>
@@ -18,6 +19,7 @@ SoilMoisture s1 = SoilMoisture("soil_moisture_1", "Moisture level",
 SdCard sd = SdCard(
     "SdCard0", "Storage",
     {{5, "sd_cs"}, {18, "sd_clk"}, {23, "sd_mosi"}, {19, "sd_miso"}}, 60);
+
 GsmModule gsm =
     GsmModule("GsmModule", "Time", {{16, "gsm_tx"}, {17, "gsm_rx"}}, 60);
 
@@ -26,6 +28,8 @@ QueueHandle_t queue2;
 int i = 0;
 int timerCallback = 0;
 std::queue<int> eventQueue;
+
+Display disp;
 
 // Duration values for the different events
 const long SECOND_MS = 1000;    // Real value: 1k
@@ -65,6 +69,7 @@ void timeCount(void *parameter) {
     vTaskDelay(25 / portTICK_PERIOD_MS);
   }
 }
+
 void eventCheck(void *parameter) {
   int option = 0;
   for (;;) {
@@ -88,8 +93,30 @@ void eventCheck(void *parameter) {
   }
 }
 
+void mainDisplay(void *parameter){
+
+  for (;;) {
+    /*
+    for (Sensor *s : listSensor) {
+      float v = s->read(10);
+      Serial.printf("Display for sensor %s \n", s->name.c_str());
+      // 
+      // Serial.printf("name %s \t", s->name.c_str());
+      // Serial.printf("value %0.3f \n", v);
+    }
+    */
+    disp.displayLoop(listSensor);
+    
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+    
+
+  }
+
+}
+
 void setup() {
   Serial.begin(115200);
+
   if (t1.setUp()) {
     listSensor.push_back(&t1);
     Serial.println("setup done t1");
@@ -115,7 +142,19 @@ void setup() {
   } else {
     Serial.println("setup not done sd card");
   }
-  Serial.println("Welcome to Smart Garden");
+
+  if (disp.setup()){
+    Serial.println("setup done main display");
+  } else{
+    Serial.println("setup not done main display");
+  }
+
+  Serial.println("");
+  Serial.println("*------------------------------*");
+  Serial.println("*    Welcome to Smart Garden   *");
+  Serial.println("*------------------------------*");
+  Serial.println("");
+
   // gsm.setUp();
   queue = xQueueCreate(100, sizeof(int));
 
@@ -125,6 +164,7 @@ void setup() {
 
   TaskHandle_t ClockTask;
   TaskHandle_t CheckTask;
+  TaskHandle_t DisplayTask;
 
   xTaskCreatePinnedToCore(
       timeCount,   // Task function.
@@ -141,7 +181,15 @@ void setup() {
       NULL,         // Parameter passed as input of the task
       2,            // Priority of the task.
       &CheckTask,   // Task handle to keep track of created task
-      1);           // pin task to core 0
+      1);           // pin task to core 1
+  xTaskCreatePinnedToCore(
+      mainDisplay,   // Task function.
+      "mainDisplay", // String with name of task.
+      10000,        // Stack size in words.
+      NULL,         // Parameter passed as input of the task
+      2,            // Priority of the task.
+      &DisplayTask, // Task handle to keep track of created task
+      1);           // pin task to core 1
 }
 
 void loop() {
