@@ -12,15 +12,17 @@ class Sensor{
   public:
     bool bFailure;
     const string name;
+    const string nameDisplay;
     const string magnitude_type;
     
 
-    Sensor(string name, string magn_type, std::map<int,string> pins, int size_stack);
+    Sensor(string name, string nameDisplay, string magn_type, std::map<int,string> pins, int size_stack);
     float read(int sampling);
     float virtual getSensorData() = 0;
     bool virtual setUp() = 0;
     const std::map<int, string> getPins();
     float callbackMinute(); 
+    float getValue();
 
   private:
     std::map<int, string> pins_;

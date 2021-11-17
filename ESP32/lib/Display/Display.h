@@ -36,11 +36,13 @@ class Display{
     // Display() { myDisplay.begin(); }
 
     bool setup();
-    void displayImage(const unsigned char * u8g_image_bits);
-    void showInitialDisplay();
-    void showMainDisplay(std::vector<Sensor *> listSensor);
     void displayLoop(std::vector<Sensor *> listSensor);
-
+    void showInitialDisplay();
+    void displayImage(const unsigned char * u8g_image_bits);
+    
+    void showMainDisplay(std::vector<Sensor *> listSensor);
+    
+    void showTestDisplay();
 };
 
 #endif

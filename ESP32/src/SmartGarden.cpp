@@ -10,18 +10,18 @@
 #include <queue>
 
 std::vector<Sensor *> listSensor;
-TempBmp180 t1 = TempBmp180("temp180_temperature", "Temperature",
+TempBmp180 t1 = TempBmp180("temp180_temperature", "Temp1", "Temperature",
                            {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, 60);
-TempBmp180 t2 = TempBmp180("temp180_pressure", "Pressure",
+TempBmp180 t2 = TempBmp180("temp180_pressure", "Press", "Pressure",
                            {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, 60);
-SoilMoisture s1 = SoilMoisture("soil_moisture_1", "Moisture level",
+SoilMoisture s1 = SoilMoisture("soil_moisture_1", "Soil1", "Moisture level",
                                {{34, "soil_moisture_avot"}}, 60);
 SdCard sd = SdCard(
-    "SdCard0", "Storage",
+    "SdCard0", "Storage", "Storage",
     {{5, "sd_cs"}, {18, "sd_clk"}, {23, "sd_mosi"}, {19, "sd_miso"}}, 60);
 
 GsmModule gsm =
-    GsmModule("GsmModule", "Time", {{16, "gsm_tx"}, {17, "gsm_rx"}}, 60);
+    GsmModule("GsmModule", "GsmModule", "Time", {{16, "gsm_tx"}, {17, "gsm_rx"}}, 60);
 
 QueueHandle_t queue;
 QueueHandle_t queue2;
@@ -77,7 +77,8 @@ void eventCheck(void *parameter) {
     if (option == 1) {
       Serial.printf("Second passing %d \n", ++i % 60);
       for (Sensor *s : listSensor) {
-        float v = s->read(10);
+        s->read(10);
+        float v = s->getValue();
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
       }
@@ -106,7 +107,11 @@ void mainDisplay(void *parameter){
     }
     */
     disp.displayLoop(listSensor);
-    
+    // disp.showTestDisplay();
+    Serial.println("");
+    Serial.println("Display: I AM A TEST !");
+    Serial.println("");
+
     vTaskDelay(50 / portTICK_PERIOD_MS);
     
 
@@ -137,7 +142,6 @@ void setup() {
   }
 
   if (sd.setUp()) {
-    listSensor.push_back(&t2);
     Serial.println("setup done sd card");
   } else {
     Serial.println("setup not done sd card");
@@ -184,10 +188,10 @@ void setup() {
       1);           // pin task to core 1
   xTaskCreatePinnedToCore(
       mainDisplay,   // Task function.
-      "mainDisplay", // String with name of task.
+      "MainDisplay", // String with name of task.
       10000,        // Stack size in words.
       NULL,         // Parameter passed as input of the task
-      2,            // Priority of the task.
+      1,            // Priority of the task.
       &DisplayTask, // Task handle to keep track of created task
       1);           // pin task to core 1
 }
