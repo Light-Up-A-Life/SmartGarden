@@ -107,11 +107,6 @@ void mainDisplay(void *parameter){
     }
     */
     disp.displayLoop(listSensor);
-    // disp.showTestDisplay();
-    Serial.println("");
-    Serial.println("Display: I AM A TEST !");
-    Serial.println("");
-
     vTaskDelay(50 / portTICK_PERIOD_MS);
     
 
