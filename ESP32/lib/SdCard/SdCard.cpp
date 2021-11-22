@@ -31,34 +31,38 @@ bool SdCard::setUp(){
 float SdCard::getSensorData(){
   return 0.0;
 }
-/*void writeSD(String fileToWrite, String textToWrite){
-  file = SD.open(fileToWrite, FILE_WRITE);
-  if (file){ DPRINTLN(F("Writing on ")); DPRINTLN(fileToWrite); // Writing on file if (file.println(textToWrite)){ DPRINTLN("Writing on SD card successful"); } else{ ERRORPRINTLN("Unable to write on SD card"); }
+bool SdCard::writeSD(String textToWrite){
+  File file = SD.open(file_name, FILE_WRITE);
+  if (file){
+    file.println(textToWrite);
     file.close();
+    return true;
   }
   else{
     Serial.println(F("Error opening the file"));
+    return false;
   }
 }
-void appendSD(String fileToWrite, String textToWrite){
-  file = SD.open(fileToWrite, FILE_APPEND);
-  if (file){
-    DPRINTLN(F("Writing on "));
-    DPRINTLN(fileToWrite);
 
-    // Appending on file 
+bool SdCard::appendSD(String textToWrite){
+  File file = SD.open(file_name, FILE_APPEND);
+  if (file){
     if (file.println(textToWrite)){
-      DPRINTLN("Writing on SD card successful");
+      file.close();
+      return true;
     }
     else{
-      ERRORPRINTLN("Unable to write on SD card");
+      Serial.println(F("Error appending message"));
     }
-    file.close();
   }
   else{
     Serial.println(F("Error opening the file"));
+    return false;
   }
+  file.close();
+  return false;
 }
+/*
 String readSD(String fileToRead){
   // Initializing variables 
   String fileText = "";
@@ -93,4 +97,5 @@ void testSDcard(){
   Serial.print("File read:\nSTART\n");
   Serial.print(fileRead);
   Serial.print("\nEND");
-}*/
+}
+*/

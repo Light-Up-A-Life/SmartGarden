@@ -11,8 +11,11 @@ class SdCard : public Sensor{
     using Sensor::Sensor;
     bool setUp() override;
     float getSensorData() override;
+    bool writeSD(String textToWrite);
+    bool appendSD(String textToWrite);
   private:
     const int MAX_ITER = 10;
+    const String file_name = "/logger.txt";
 };
 
 #endif

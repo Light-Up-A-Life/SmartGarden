@@ -8,34 +8,39 @@
 #include <SPI.h>
 #include <queue>
 
-std::vector<Sensor *> listSensor;
-TempBmp180 t1 = TempBmp180("temp180_temperature", "Temperature",
-                           {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, 60);
-TempBmp180 t2 = TempBmp180("temp180_pressure", "Pressure",
-                           {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, 60);
-SoilMoisture s1 = SoilMoisture("soil_moisture_1", "Moisture level",
-                               {{34, "soil_moisture_avot"}}, 60);
-SdCard sd = SdCard(
-    "SdCard0", "Storage",
-    {{5, "sd_cs"}, {18, "sd_clk"}, {23, "sd_mosi"}, {19, "sd_miso"}}, 60);
-GsmModule gsm =
-    GsmModule("GsmModule", "Time", {{16, "gsm_tx"}, {17, "gsm_rx"}}, 60);
-
-QueueHandle_t queue;
-QueueHandle_t queue2;
-int i = 0;
-int timerCallback = 0;
-std::queue<int> eventQueue;
-
 // Duration values for the different events
 const long SECOND_MS = 1000;    // Real value: 1k
-const long MINUTE_MS = 60000;   // Real value: 60k
+const long MINUTE_MS = 6000;   // Real value: 60k
 const long HOUR_MS = 600000000; // Real value: 3.6M
 
 unsigned long previousMillisMinute = 0, previousMillisHour = 0,
               previousMillisSec = 0;
 
 bool minutePassedEvent, hourPassedEvent, secPassedEvent;
+
+const int size_stack = MINUTE_MS/1000;
+int sec = 0;
+int minute = 0;
+
+std::vector<Sensor *> listSensor;
+TempBmp180 t1 = TempBmp180("temp180_temperature", "Temperature",
+                           {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, size_stack);
+TempBmp180 t2 = TempBmp180("temp180_pressure", "Pressure",
+                           {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, size_stack);
+SoilMoisture s1 = SoilMoisture("soil_moisture_1", "Moisture level",
+                               {{34, "soil_moisture_avot"}}, size_stack);
+SdCard sd = SdCard(
+    "SdCard0", "Storage",
+    {{5, "sd_cs"}, {18, "sd_clk"}, {23, "sd_mosi"}, {19, "sd_miso"}}, size_stack);
+GsmModule gsm =
+    GsmModule("GsmModule", "Time", {{16, "gsm_tx"}, {17, "gsm_rx"}}, size_stack);
+
+QueueHandle_t queue;
+
+std::queue<int> eventQueue;
+String sd_msg = "";
+
+
 
 void timeCount(void *parameter) {
   for (;;) {
@@ -46,13 +51,14 @@ void timeCount(void *parameter) {
     if (currentMillis - previousMillisSec >= SECOND_MS) {
       previousMillisSec = currentMillis;
       eventCallback = 1;
-      Serial.printf("millisSec %ld \n", previousMillisSec);
+      //Serial.printf("millisSec %ld \n", previousMillisSec);
       //Serial.println(xPortGetCoreID());
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
     }
 
     if (currentMillis - previousMillisMinute >= MINUTE_MS) {
       previousMillisMinute = currentMillis;
+      sd_msg = (String) ++minute;
       eventCallback = 2;
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
     }
@@ -70,7 +76,7 @@ void eventCheck(void *parameter) {
   for (;;) {
     xQueueReceive(queue, &option, portMAX_DELAY);
     if (option == 1) {
-      Serial.printf("Second passing %d \n", ++i % 60);
+      Serial.printf("Second passing %d \n", ++sec % 60);
       for (Sensor *s : listSensor) {
         float v = s->read(10);
         Serial.printf("name %s \t", s->name.c_str());
@@ -78,11 +84,15 @@ void eventCheck(void *parameter) {
       }
     } else if (option == 2) {
       Serial.printf("Minute passing \n");
+      
       for (Sensor *s : listSensor) {
         float v = s->callbackMinute();
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
+        sd_msg = sd_msg + "," + String(v) ;
       }
+      sd.appendSD(sd_msg);
+      Serial.println(sd_msg);
     }
     vTaskDelay(50 / portTICK_PERIOD_MS);
   }
@@ -90,6 +100,7 @@ void eventCheck(void *parameter) {
 
 void setup() {
   Serial.begin(115200);
+  /*
   if (t1.setUp()) {
     listSensor.push_back(&t1);
     Serial.println("setup done t1");
@@ -102,6 +113,7 @@ void setup() {
   } else {
     Serial.println("setup not done t2");
   }
+  */
   if (s1.setUp()) {
     listSensor.push_back(&s1);
     Serial.println("setup done s1");
@@ -110,11 +122,15 @@ void setup() {
   }
 
   if (sd.setUp()) {
-    listSensor.push_back(&t2);
     Serial.println("setup done sd card");
   } else {
     Serial.println("setup not done sd card");
   }
+  String encabezado = "time,";
+  for (Sensor *s : listSensor) {
+    encabezado = encabezado + String(s->name.c_str()) + ",";
+  }
+  Serial.println(sd.writeSD(encabezado));
   Serial.println("Welcome to Smart Garden");
   // gsm.setUp();
   queue = xQueueCreate(100, sizeof(int));
