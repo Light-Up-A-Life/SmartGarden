@@ -2,9 +2,10 @@
 
 using std::string;
 
-Sensor::Sensor(string name, string magn_type, std::map<int,string> pins,int size_stack):
+Sensor::Sensor(string name, string nameDisplay, string magn_type, std::map<int,string> pins,int size_stack):
   bFailure(false),
   name(name),
+  nameDisplay(nameDisplay),
   magnitude_type(magn_type),
   pins_(pins),
   it_mes_sec_(0),
@@ -37,6 +38,11 @@ float Sensor::read(int sampling)
    
   return value;
 }
+
+float Sensor::getValue(){
+  return mesures_sec_[it_mes_sec_-1];
+}
+
 float Sensor::callbackMinute(){
   float sum = 0;
   for(int i = 0; i < mesures_sec_.capacity(); i++){
