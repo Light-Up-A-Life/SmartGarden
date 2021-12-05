@@ -34,7 +34,7 @@
 //              Constants                 //
 // -------------------------------------- //
 const int SAMPLING_N = 10;
-const int MAX_ITER_GSM = 60;
+const int MAX_ITER_GSM = 1;
 
 // -------------------------------------- //
 //              Anemometer                //
@@ -326,7 +326,9 @@ void WiFiConnectFromLib()
 /*****   Google API connection   ****/
 /************************************/
 
-String GOOGLE_SCRIPT_ID = "AKfycby6m-J7Nof2ULsI72HIgboaE3o9nXXvW46crG2_IOePWZplCblh"; // Replace by your GAS service id
+String GOOGLE_SCRIPT_ID = "AKfycbwBxSvzfL3I2FONMZ5PMsvOz3tepmNEdXYv-K5YEiMN3g7jf51akX43cNY2YheowQYvPQ"; // Replace by your GAS service id
+
+
 
 // Updated 04.12.2019
 const char *root_ca =
@@ -364,8 +366,9 @@ void sendDataToGoogle(String params)
   DPRINTLN(url);
 
   http.begin(url, root_ca); //Specify the URL and certificate
-  String httpJSONobjString = http.getString();
+  int httpJSONobjString = http.GET();
   http.end();
+  Serial.println(": done "+httpJSONobjString);
 }
 
 /************************************/
