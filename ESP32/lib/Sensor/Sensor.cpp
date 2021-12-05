@@ -45,7 +45,7 @@ float Sensor::getValue(){
 
 float Sensor::callbackMinute(){
   float sum = 0;
-  for(int i = 0; i < mesures_sec_.capacity(); i++){
+  for(int i = 0; i < mesures_sec_.capacity()-1; i++){
     sum += mesures_sec_[i];
   }
   float avg = sum/float(mesures_sec_.capacity());

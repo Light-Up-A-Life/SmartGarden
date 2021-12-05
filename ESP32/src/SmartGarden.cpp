@@ -4,14 +4,19 @@
 #include "SoilMoisture.h"
 #include "TemperatureBMP180.h"
 #include "Display.h"
+#include "WifiModule.h"
 
 #include "time.h"
 #include <SPI.h>
 #include <queue>
 
+// Const Wifi
+const std::string wlan_ssid = "SFR_6608";
+const std::string wlan_pass = "2cwt45yriv2urm57trbx";
+
 // Duration values for the different events
 const long SECOND_MS = 1000;    // Real value: 1k
-const long MINUTE_MS = 6000;   // Real value: 60k
+const long MINUTE_MS = 600000;   // Real value: 60k
 const long HOUR_MS = 600000000; // Real value: 3.6M
 const int size_stack = MINUTE_MS/1000;
 
@@ -34,7 +39,10 @@ QueueHandle_t queue;
 
 Display disp;
 
+WifiModule wifiModule;
+
 String sd_msg = "";
+String server_msg  = "";
 unsigned long previousMillisMinute = 0, previousMillisHour = 0,
               previousMillisSec = 0;
 
@@ -61,6 +69,7 @@ void timeCount(void *parameter) {
     if (currentMillis - previousMillisMinute >= MINUTE_MS) {
       previousMillisMinute = currentMillis;
       sd_msg = (String) ++minute;
+      server_msg = "Time="+ (String) minute;
       eventCallback = 2;
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
     }
@@ -90,15 +99,20 @@ void eventCheck(void *parameter) {
       }
     } else if (option == 2) {
       Serial.printf("Minute passing \n");
+
       
       for (Sensor *s : listSensor) {
         float v = s->callbackMinute();
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
         sd_msg = sd_msg + "," + String(v) ;
+        server_msg = server_msg + "&" + String(s->name.c_str()) + "=" + String(v);
       }
       sd.appendSD(sd_msg);
       Serial.println(sd_msg);
+      Serial.println(server_msg);
+
+      wifiModule.sendDataToGoogle(server_msg);
     }
     vTaskDelay(50 / portTICK_PERIOD_MS);
   }
@@ -139,12 +153,14 @@ void setup() {
   } else {
     Serial.println("setup not done t2");
   }
+  /*
   if (s1.setUp()) {
     listSensor.push_back(&s1);
     Serial.println("setup done s1");
   } else {
     Serial.println("setup not done s1");
   }
+  */
 
   if (sd.setUp()) {
     Serial.println("setup done sd card");
@@ -163,6 +179,10 @@ void setup() {
   } else{
     Serial.println("setup not done main display");
   }
+
+
+  wifiModule.connectToWiFi(wlan_ssid,wlan_pass);
+
 
   Serial.println("");
   Serial.println("*------------------------------*");
@@ -197,6 +217,7 @@ void setup() {
       2,            // Priority of the task.
       &CheckTask,   // Task handle to keep track of created task
       1);           // pin task to core 1
+      /*
   xTaskCreatePinnedToCore(
       mainDisplay,   // Task function.
       "MainDisplay", // String with name of task.
@@ -205,6 +226,7 @@ void setup() {
       1,            // Priority of the task.
       &DisplayTask, // Task handle to keep track of created task
       1);           // pin task to core 1
+      */
 }
 
 void loop() {
