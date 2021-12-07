@@ -5,6 +5,8 @@
 #include "TemperatureBMP180.h"
 #include "Display.h"
 #include "WifiModule.h"
+#include "TempExt.h"
+#include "Anemometer.h"
 
 #include "time.h"
 #include <SPI.h>
@@ -16,7 +18,7 @@ const std::string wlan_pass = "2cwt45yriv2urm57trbx";
 
 // Duration values for the different events
 const long SECOND_MS = 1000;    // Real value: 1k
-const long MINUTE_MS = 600000;   // Real value: 60k
+const long MINUTE_MS = 60000;   // Real value: 60k
 const long HOUR_MS = 600000000; // Real value: 3.6M
 const int size_stack = MINUTE_MS/1000;
 
@@ -34,6 +36,12 @@ SdCard sd = SdCard(
 
 GsmModule gsm =
     GsmModule("GsmModule", "GsmModule", "Time", {{16, "gsm_tx"}, {17, "gsm_rx"}}, size_stack);
+
+TempExt t_ext = TempExt("tempDS18B20_ext", "TempE", "Temperature_extern",
+                        {{33, "temp_DS18B20_ext"}}, size_stack);
+
+Anemometer anem = Anemometer("anemometer_wind", "Wind", "Wind_direction",
+                        {{32, "wind_direction"}}, size_stack);
 
 QueueHandle_t queue;
 
@@ -90,7 +98,7 @@ void eventCheck(void *parameter) {
     if (option == 1) {
       Serial.printf("Second passing %d \n", ++sec % 60);
       for (Sensor *s : listSensor) {
-        s->read(10);
+        s->read(1);
         /*
         float v = s->getValue();
         Serial.printf("name %s \t", s->name.c_str());
@@ -153,6 +161,19 @@ void setup() {
   } else {
     Serial.println("setup not done t2");
   }
+  if (t_ext.setUp()) {
+    listSensor.push_back(&t_ext);
+    Serial.println("setup done t_ext");
+  } else {
+    Serial.println("setup not done t_ext");
+  }
+  if (anem.setUp()) {
+    listSensor.push_back(&anem);
+    Serial.println("setup done anem");
+  } else {
+    Serial.println("setup not done anem");
+  }
+
   /*
   if (s1.setUp()) {
     listSensor.push_back(&s1);
