@@ -3,14 +3,17 @@
 
 #include "Sensor.h"
 
-class VoltageSensor : public Sensor{
-  public:
-    using Sensor::Sensor;
-    bool setUp() override;
-    float getSensorData() override;
-  private:
-    std::string data_;
-    float alpha_;
+class VoltageSensor : public Sensor {
+public:
+  using Sensor::Sensor;
+  bool setUp() override;
+  float getSensorData() override;
+
+private:
+  float getBatteryVoltage();
+  float getSolarPanelVoltage();
+  std::string data_;
+  float alpha_;
 };
 
 #endif

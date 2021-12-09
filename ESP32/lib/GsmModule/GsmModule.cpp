@@ -22,7 +22,7 @@ bool GsmModule::setUp() {
     // Unlock pin
     GsmModule::sendATCmd("AT+CPIN=\"0000\"");
     // Send sms
-    //GsmModule::sendSMS("Smart garden wake up");
+    GsmModule::sendSMS("Smart garden set up");
     // Send to server
     GsmModule::sendToServer("hola");
   }

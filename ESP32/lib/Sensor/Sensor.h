@@ -24,7 +24,7 @@ class Sensor{
     float callbackMinute(); 
     float getValue();
 
-  private:
+  protected:
     std::map<int, string> pins_;
     std::vector<float> mesures_sec_ {};
     std::vector<float> mesures_min_ {};

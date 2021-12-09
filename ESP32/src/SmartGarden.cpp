@@ -7,6 +7,7 @@
 #include "TempExt.h"
 #include "TemperatureBMP180.h"
 #include "WifiModule.h"
+#include "VoltageSensor.h"
 
 #include "time.h"
 #include <SPI.h>
@@ -49,8 +50,18 @@ GsmModule gsm = GsmModule("GsmModule", "GsmModule", "Time",
 TempExt t_ext = TempExt("tempDS18B20_ext", "TempE", "Temperature_extern",
                         {{33, "temp_DS18B20_ext"}}, size_stack);
 
-Anemometer anem = Anemometer("anemometer_wind", "Wind", "Wind_direction",
-                             {{32, "wind_direction"}}, size_stack);
+Anemometer anem = Anemometer("anemometer_speed", "WindS", "Wind_speed",
+                             {{32, "wind_speed"}}, size_stack);
+
+Anemometer anem_dir = Anemometer("anemometer_dir", "WindD", "Wind_dir",
+                             {{35, "wind_direction"}}, size_stack);
+
+VoltageSensor bat_volt = VoltageSensor("bat_voltage", "BatVo", "Voltage_bat",
+                             {{14, "bat_voltage"}}, size_stack);
+
+VoltageSensor panel_volt = VoltageSensor("panel", "PanVo", "Voltage_pan",
+                             {{15, "panel_voltage"}}, size_stack);
+
 
 QueueHandle_t queue;
 
@@ -67,6 +78,15 @@ bool minutePassedEvent, hourPassedEvent, secPassedEvent;
 int sec = 0;
 int minute = 0;
 int hours = 0;
+
+void isr_rotation() {
+  if ((millis() - anem.ContactBounceTime) > 15 ) { // debounce the switch contact.
+  anem.Rotations++;
+  anem.ContactBounceTime = millis();
+  // Serial.print(Rotations);
+  //Serial.print(" ... ");
+  }
+}
 
 void timeCount(void *parameter) {
   for (;;) {
@@ -108,11 +128,9 @@ void eventCheck(void *parameter) {
       Serial.printf("Second passing %d \n", ++sec % 60);
       for (Sensor *s : listSensor) {
         s->read(1);
-        /*
         float v = s->getValue();
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
-        */
       }
     } else if (option == 2) {
       Serial.printf("Minute passing \n");
@@ -201,10 +219,33 @@ void setup() {
   }
   if (anem.setUp()) {
     listSensor.push_back(&anem);
+    attachInterrupt(digitalPinToInterrupt(32), isr_rotation, FALLING);
+
     Serial.println("setup done anem");
   } else {
     Serial.println("setup not done anem");
   }
+  if (anem_dir.setUp()) {
+    listSensor.push_back(&anem_dir);
+    Serial.println("setup done anem direction");
+  } else {
+    Serial.println("setup not done anem direction");
+  }
+  if (panel_volt.setUp()) {
+    listSensor.push_back(&panel_volt);
+    Serial.println("setup done t1");
+  } else {
+    Serial.println("setup not done t1");
+  }
+
+  if (bat_volt.setUp()) {
+    listSensor.push_back(&bat_volt);
+    Serial.println("setup done t1");
+  } else {
+    Serial.println("setup not done t1");
+  }
+
+
   if (s1.setUp()) {
     listSensor.push_back(&s1);
     Serial.println("setup done s1");
@@ -285,11 +326,6 @@ void setup() {
 
 void loop() { vTaskDelete(NULL); }
 
-/*
-TODO:
-GPS as service
-Data each second
-enum queue option
-SD save
-GSM get/request
-*/
+
+
+
