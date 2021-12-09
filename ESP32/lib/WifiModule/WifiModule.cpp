@@ -48,3 +48,10 @@ void WifiModule::sendDataToGoogle(String params){
   http.end();
 
 }
+
+bool WifiModule::connectToServer(const char* host, const uint16_t port){
+  if (!client.connect(host, port)) {
+      return false;
+    }
+  return true;
+}

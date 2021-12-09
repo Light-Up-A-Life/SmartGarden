@@ -13,8 +13,14 @@ public:
  
   void connectToWiFi(const std::string WLAN_SSID, const std::string WLAN_PASS);
   void sendDataToGoogle(String params);
+  bool connectToServer(const char* host, const uint16_t port);
+
+  WiFiClient client;
 
 private:
+  
+
+
   HTTPClient http;
   String GOOGLE_SCRIPT_ID =
       "AKfycbwBxSvzfL3I2FONMZ5PMsvOz3tepmNEdXYv-K5YEiMN3g7jf51akX43cNY2YheowQYvPQ";

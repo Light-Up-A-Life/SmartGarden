@@ -22,6 +22,10 @@ class GsmModule : public Sensor{
     using Sensor::Sensor;
     bool setUp() override;
     float getSensorData() override;
+    bool sendSMS(String msg);
+    bool sendToServer(String msg);
+
+
     /*void printLocalTime();
     void sendMessage(String);
     void receiveMessage();
@@ -29,6 +33,7 @@ class GsmModule : public Sensor{
     std::string extractTimestamp();
     std::string extractTimestamp2(String);*/
   private:
+    String sendATCmd(String msg);
     std::string data_;
     GSM gsmModule;
     const std::string numberSMS_ = "+33770451126";
