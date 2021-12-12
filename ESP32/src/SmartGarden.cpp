@@ -14,12 +14,12 @@
 #include <queue>
 
 // Const Wifi
-/*
 const std::string wlan_ssid = "SFR_6608";
 const std::string wlan_pass = "2cwt45yriv2urm57trbx";
-*/
+/*
 const std::string wlan_ssid = "AlejoPhone";
 const std::string wlan_pass = "youdonthaveinternet";
+*/
 const uint16_t port = 10026;
 const char *host = "91.68.60.139";
 
@@ -105,7 +105,7 @@ void timeCount(void *parameter) {
     if (currentMillis - previousMillisMinute >= MINUTE_MS) {
       previousMillisMinute = currentMillis;
       sd_msg = (String)++minute;
-      server_msg = "Time(min)=" + (String)minute;
+      server_msg = "{\"Time\": " + (String)minute;
       eventCallback = 2;
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
     }
@@ -113,7 +113,7 @@ void timeCount(void *parameter) {
     if (currentMillis - previousMillisHour >= HOUR_MS) {
       previousMillisHour = currentMillis;
       eventCallback = 3;
-      server_msg = "Time(hours)=" + (String)++hours;
+      server_msg = "{\"Time\": " + (String)minute;
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
     }
     vTaskDelay(25 / portTICK_PERIOD_MS);
@@ -128,9 +128,11 @@ void eventCheck(void *parameter) {
       Serial.printf("Second passing %d \n", ++sec % 60);
       for (Sensor *s : listSensor) {
         s->read(1);
+        /*
         float v = s->getValue();
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
+        */
       }
     } else if (option == 2) {
       Serial.printf("Minute passing \n");
@@ -140,30 +142,28 @@ void eventCheck(void *parameter) {
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
         sd_msg = sd_msg + "," + String(v);
-        server_msg = 
-             server_msg + "&" + String(s->name.c_str()) + "=" + String(v);
+        server_msg =
+             server_msg + ",\"" + String(s->name.c_str()) + "\": " + String(v);
         // clientS.msg_tx[s->name.c_str()]= v;
       }
+      server_msg = server_msg + "}";
       sd.appendSD(sd_msg);
       Serial.println(sd_msg);
       Serial.println(server_msg);
       gsm.sendToServer(server_msg);
-
       /*
       if (wifiModule.connectToServer(host,port)){
         wifiModule.client.print(server_msg);
         wifiModule.client.stop();
       }
       */
-
-      // wifiModule.sendDataToGoogle(server_msg);
     } else if (option == 3) {
       for (Sensor *s : listSensor) {
         float v = s->callbackMinute();
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
         server_msg =
-            server_msg + "&" + String(s->name.c_str()) + "=" + String(v);
+             server_msg + ",\"" + String(s->name.c_str()) + "\": " + String(v);
       }
       gsm.sendSMS(server_msg);
 
@@ -278,14 +278,12 @@ void setup() {
     Serial.println("Connection to host failed");
   }
   */
-
   Serial.println("");
   Serial.println("*------------------------------*");
   Serial.println("*    Welcome to Smart Garden   *");
   Serial.println("*------------------------------*");
   Serial.println("");
 
-  // gsm.setUp();
   queue = xQueueCreate(100, sizeof(int));
 
   if (queue == NULL) {
