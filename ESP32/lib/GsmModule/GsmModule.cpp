@@ -22,27 +22,53 @@ bool GsmModule::setUp() {
     // Unlock pin
     GsmModule::sendATCmd("AT+CPIN=\"0000\"");
     // Send sms
-    GsmModule::sendSMS("Smart garden set up");
+    GsmModule::sendSMS("Minka logger set up");
     // Send to server
     GsmModule::sendToServer("hola");
   }
   return true;
 }
 
+String GsmModule::getClock(){
+  sendATCmd("AT+CGPS?"); 
+  // sendATCmd("AT+CGPS=1,1");  
+  delay(50);
+  
+  String res = sendATCmd("AT+CCLK?");
+  return res;
+}
+
+String GsmModule::getPosition(){
+  sendATCmd("AT+CGPS?"); 
+  // sendATCmd("AT+CGPS=1,1");  
+  delay(50);  
+  
+  String res = sendATCmd("+CGPSINFO");
+  return res;
+}
+
 bool GsmModule::sendSMS(String msg) {
+
   // Enable SMS
   GsmModule::sendATCmd("AT+CMGF=1");
+
   //Send sms
-  Serial2.print("AT+CMGS=\"+33770451126\"\r");
+  // String number = "+573138615773";
+
+  String number = "+573202940847";
+  Serial2.print("AT+CMGS=\"+573202940847\"\r");
+  
   delay(50);
   Serial2.print(msg);
   delay(50);
   Serial2.print((char)26);
   delay(50);
   Serial2.println();
+
   Serial.println("SentMessage");
   String res = Serial2.readString();
   Serial.println("res sms:" + res);
+  
   return true;
 }
 
@@ -54,6 +80,7 @@ bool GsmModule::sendToServer(String msg){
   GsmModule::sendATCmd("AT+NETOPEN");
   GsmModule::sendATCmd("AT+IPADDR");
   GsmModule::sendATCmd("AT+CIPOPEN=0,\"TCP\",\"91.68.60.139\",10026");
+
   Serial2.print("AT+CIPSEND=0,\r");
   delay(100);
   Serial2.print(msg);
@@ -61,6 +88,7 @@ bool GsmModule::sendToServer(String msg){
   Serial2.print((char)26);
   delay(100);
   Serial2.println();
+
   Serial.println("SentMessage");
   String res = Serial2.readString();
   Serial.println("res sms:" + res);

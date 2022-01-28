@@ -16,11 +16,15 @@ public:
       ContactBounceTime; // Timer to avoid contact bounce in interrupt routine
 private:
   float getWindSpeedMph();
+  float getWindSpeedMpers();
   float getWindDirection();
 
   std::string data_;
 
-  float offset = 1.0;
+  
+  
+  //OLD
+  float offset = 0;
   float gain_wind_direction = 1.665 / 2.697;
   float vol_max_output = 3.18;
   float vol_max_input = 5.0;
@@ -29,7 +33,7 @@ private:
   float TperiodWindSpeed = 0.5; // seconds
 
   //DIRECTION
-  int Offset = 0;
+  int Offset = 180;
 };
 
 #endif

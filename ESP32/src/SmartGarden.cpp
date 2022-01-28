@@ -26,26 +26,24 @@ const char *host = "91.68.60.139";
 // Duration values for the different events
 const long SECOND_MS = 1000;           // Real value: 1k
 const long MINUTE_MS = 60000; // Real value: 60k
-const long HOUR_MS = 3600000;     // Real value: 3.6M
+const long HOUR_MS =   3600000;     // Real value: 3.6M
 const int size_stack = MINUTE_MS / 1000;
 
 std::vector<Sensor *> listSensor;
 
+
+// ------------------------------ //
+//   Sensor objects creation      //
+// ------------------------------ //
+
+// function inputs: string name, string nameDisplay, string magn_type, ... 
+
 TempBmp180 t1 =
-    TempBmp180("temp180_temperature", "Temp1", "Temperature",
+    TempBmp180("temp180_temp", "Temp1", "Temperature",
                {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, size_stack);
 TempBmp180 t2 =
     TempBmp180("temp180_pressure", "Press", "Pressure",
                {{21, "bmp180_sda"}, {22, "bmp180_scl"}}, size_stack);
-SoilMoisture s1 = SoilMoisture("soil_moisture_1", "Soil1", "Moisture level",
-                               {{34, "soil_moisture_avot"}}, size_stack);
-SdCard sd =
-    SdCard("SdCard0", "Storage", "Storage",
-           {{5, "sd_cs"}, {18, "sd_clk"}, {23, "sd_mosi"}, {19, "sd_miso"}},
-           size_stack);
-
-GsmModule gsm = GsmModule("GsmModule", "GsmModule", "Time",
-                          {{16, "gsm_tx"}, {17, "gsm_rx"}}, size_stack);
 
 TempExt t_ext = TempExt("tempDS18B20_ext", "TempE", "Temperature_extern",
                         {{33, "temp_DS18B20_ext"}}, size_stack);
@@ -57,27 +55,60 @@ Anemometer anem_dir = Anemometer("anemometer_dir", "WindD", "Wind_dir",
                              {{35, "wind_direction"}}, size_stack);
 
 VoltageSensor bat_volt = VoltageSensor("bat_voltage", "BatVo", "Voltage_bat",
-                             {{14, "bat_voltage"}}, size_stack);
+                             {{34, "bat_voltage"}}, size_stack);
 
-VoltageSensor panel_volt = VoltageSensor("panel", "PanVo", "Voltage_pan",
-                             {{15, "panel_voltage"}}, size_stack);
+VoltageSensor panel_volt = VoltageSensor("panel_voltage", "PanVo", "Voltage_panel",
+                             {{39, "panel_voltage"}}, size_stack);
+
+VoltageSensor panel_current = VoltageSensor("panel_current", "PanCurr", "Current_panel",
+                             {{4, "panel_current"}}, size_stack);
 
 
-QueueHandle_t queue;
+// ------------------------------ //
+//  Communication means creation  //
+// ------------------------------ //
+
+SdCard sd =
+    SdCard("SdCard0", "Storage", "Storage",
+           {{5, "sd_cs"}, {18, "sd_clk"}, {23, "sd_mosi"}, {19, "sd_miso"}},
+           size_stack);
+
+GsmModule gsm = GsmModule("GsmModule", "GsmModule", "Time",
+                          {{16, "gsm_tx"}, {17, "gsm_rx"}}, size_stack);
 
 Display disp;
 
 WifiModule wifiModule;
 
+// ------------------------------ //
+
+QueueHandle_t queue;
+
 String sd_msg = "";
 String server_msg = "";
+
 unsigned long previousMillisMinute = 0, previousMillisHour = 0,
               previousMillisSec = 0;
 
 bool minutePassedEvent, hourPassedEvent, secPassedEvent;
-int sec = 0;
-int minute = 0;
-int hours = 0;
+unsigned long  sec = 0;
+unsigned long  minute = 0;
+unsigned long  hours = 0;
+
+/*
+String createJSON() {
+
+  // Sending data to SD card & to server 
+  String server_msg_JSON = "{\"Time\": " + (String)minute;
+  for (Sensor *s : listSensor) {
+    float v = s->callbackMinute();
+    server_msg_JSON =
+          server_msg_JSON + ",\"" + String(s->name.c_str()) + "\": " + String(v);
+  }
+  server_msg_JSON = server_msg_JSON + "}";
+  return server_msg_JSON;
+}
+*/ 
 
 void isr_rotation() {
   if ((millis() - anem.ContactBounceTime) > 15 ) { // debounce the switch contact.
@@ -100,6 +131,7 @@ void timeCount(void *parameter) {
       // Serial.printf("millisSec %ld \n", previousMillisSec);
       // Serial.println(xPortGetCoreID());
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
+
     }
 
     if (currentMillis - previousMillisMinute >= MINUTE_MS) {
@@ -107,6 +139,7 @@ void timeCount(void *parameter) {
       sd_msg = (String)++minute;
       server_msg = "Time(min)=" + (String)minute;
       eventCallback = 2;
+      sec = 0;
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
     }
 
@@ -114,6 +147,7 @@ void timeCount(void *parameter) {
       previousMillisHour = currentMillis;
       eventCallback = 3;
       server_msg = "Time(hours)=" + (String)++hours;
+      minute = 0;
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
     }
     vTaskDelay(25 / portTICK_PERIOD_MS);
@@ -126,29 +160,51 @@ void eventCheck(void *parameter) {
     xQueueReceive(queue, &option, portMAX_DELAY);
     if (option == 1) {
       Serial.printf("Second passing %d \n", ++sec % 60);
+      Serial.printf("Time: %02d:%02d:%02d\n", hours, minute ,sec );
+      // Serial.printf("Time GSM: %s\n", gsm.getClock());
+      // String pos = gsm.getPosition();
+      // Serial.printf("Position GSM: %s\n", pos);
+
       for (Sensor *s : listSensor) {
         s->read(1);
         float v = s->getValue();
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
       }
+      Serial.println("");
+      
     } else if (option == 2) {
       Serial.printf("Minute passing \n");
+      server_msg = "{\"Time\": \"" + (String)hours + ":" + (String)minute + ":" + (String)sec + "\"";
 
       for (Sensor *s : listSensor) {
         float v = s->callbackMinute();
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
         sd_msg = sd_msg + "," + String(v);
-        server_msg = 
+        
+        server_msg =
+             server_msg + ",\"" + String(s->name.c_str()) + "\": " + String(v);
+
+        /*server_msg = 
              server_msg + "&" + String(s->name.c_str()) + "=" + String(v);
+        */
         // clientS.msg_tx[s->name.c_str()]= v;
       }
+      server_msg = server_msg + "}";
       sd.appendSD(sd_msg);
       Serial.println(sd_msg);
       Serial.println(server_msg);
       gsm.sendToServer(server_msg);
 
+      // Sending a I'm alive message every x minutes
+      /*
+      if (minute % 30 == 0){
+        server_msg = "Minka logger alive (" +  (String)hours + ":" + (String)minute + ":" + (String)sec + ")";
+        gsm.sendSMS(server_msg);
+      }
+      */ 
+     
       /*
       if (wifiModule.connectToServer(host,port)){
         wifiModule.client.print(server_msg);
@@ -158,6 +214,12 @@ void eventCheck(void *parameter) {
 
       // wifiModule.sendDataToGoogle(server_msg);
     } else if (option == 3) {
+      
+      Serial.printf("Hour passing \n");
+      server_msg = "Minka logger alive (" +  (String)hours + ":" + (String)minute + ":" + (String)sec + ")";
+      gsm.sendSMS(server_msg);
+      /*
+      
       for (Sensor *s : listSensor) {
         float v = s->callbackMinute();
         Serial.printf("name %s \t", s->name.c_str());
@@ -165,7 +227,8 @@ void eventCheck(void *parameter) {
         server_msg =
             server_msg + "&" + String(s->name.c_str()) + "=" + String(v);
       }
-      gsm.sendSMS(server_msg);
+      */
+      
 
     }
     else{
@@ -194,11 +257,25 @@ void mainDisplay(void *parameter) {
 void setup() {
   Serial.begin(115200);
 
+
   if (gsm.setUp()) {
     Serial.println("setup done gsm");
   } else {
     Serial.println("setup not done gsm");
   }
+
+  /*
+  while(1){
+    Serial.println("-----Message------");
+    server_msg = "Minka logger alive";
+    gsm.sendSMS(server_msg);
+    delay(5000);
+    
+    Serial.println("-------------------");
+    Serial.println("");
+  }
+  */
+
   if (t1.setUp()) {
     listSensor.push_back(&t1);
     Serial.println("setup done t1");
@@ -233,24 +310,22 @@ void setup() {
   }
   if (panel_volt.setUp()) {
     listSensor.push_back(&panel_volt);
-    Serial.println("setup done t1");
+    Serial.println("setup done panel voltage");
   } else {
-    Serial.println("setup not done t1");
+    Serial.println("setup not done panel voltage");
+  }
+  if (panel_current.setUp()) {
+    listSensor.push_back(&panel_current);
+    Serial.println("setup done panel current");
+  } else {
+    Serial.println("setup not done panel current");
   }
 
   if (bat_volt.setUp()) {
     listSensor.push_back(&bat_volt);
-    Serial.println("setup done t1");
+    Serial.println("setup done battery voltage");
   } else {
-    Serial.println("setup not done t1");
-  }
-
-
-  if (s1.setUp()) {
-    listSensor.push_back(&s1);
-    Serial.println("setup done s1");
-  } else {
-    Serial.println("setup not done s1");
+    Serial.println("setup not done battery voltage");
   }
 
   if (sd.setUp()) {
@@ -264,13 +339,14 @@ void setup() {
   }
   Serial.println(sd.writeSD(encabezado));
   Serial.println("Welcome to Smart Garden");
-  /*
+  
   if (disp.setup()){
     Serial.println("setup done main display");
   } else{
     Serial.println("setup not done main display");
   }
 
+  /*
   wifiModule.connectToWiFi(wlan_ssid,wlan_pass);
   if (wifiModule.connectToServer(host,port)){
     Serial.println("Connection to host success");
@@ -279,22 +355,37 @@ void setup() {
   }
   */
 
-  Serial.println("");
-  Serial.println("*------------------------------*");
-  Serial.println("*    Welcome to Smart Garden   *");
-  Serial.println("*------------------------------*");
-  Serial.println("");
-
-  // gsm.setUp();
   queue = xQueueCreate(100, sizeof(int));
 
   if (queue == NULL) {
     Serial.println("Error creating the queue");
   }
 
+  Serial.println("");
+  Serial.println("*------------------------------*");
+  Serial.println("*    Welcome to Smart Garden   *");
+  Serial.println("*------------------------------*");
+  Serial.println("");
+
+  // Final reset before launch 
+  /*
+  previousMillisSec = 0;
+  previousMillisMinute = 0;
+  previousMillisHour = 0;
+
+  secPassedEvent = false;
+  minutePassedEvent = false;
+  hourPassedEvent = false;
+
+  sec = 0;
+  minute = 0;
+  hours = 0;
+  */
+
   TaskHandle_t ClockTask;
   TaskHandle_t CheckTask;
   TaskHandle_t DisplayTask;
+
 
   xTaskCreatePinnedToCore(
       timeCount,   // Task function.
@@ -312,16 +403,16 @@ void setup() {
       2,            // Priority of the task.
       &CheckTask,   // Task handle to keep track of created task
       1);           // pin task to core 1
-                    /*
-                xTaskCreatePinnedToCore(
-                    mainDisplay,   // Task function.
-                    "MainDisplay", // String with name of task.
-                    10000,        // Stack size in words.
-                    NULL,         // Parameter passed as input of the task
-                    1,            // Priority of the task.
-                    &DisplayTask, // Task handle to keep track of created task
-                    1);           // pin task to core 1
-                    */
+                    
+  xTaskCreatePinnedToCore(
+      mainDisplay,  // Task function.
+      "MainDisplay",// String with name of task.
+      10000,        // Stack size in words.
+      NULL,         // Parameter passed as input of the task
+      1,            // Priority of the task.
+      &DisplayTask, // Task handle to keep track of created task
+      1);           // pin task to core 1
+      
 }
 
 void loop() { vTaskDelete(NULL); }

@@ -62,7 +62,8 @@ void Display::showTestDisplay(){
         //myDisplay.setCursor(DISPLAY_WIDTH/2, DISPLAY_HEIGHT/2); 
         //myDisplay.print("I AM A TEST !");
         myDisplay.setFont(u8g2_font_ncenB14_tr);
-        myDisplay.drawStr(0,24,"Hello World!");
+        myDisplay.drawStr(0,24,"Light Up");
+        myDisplay.drawStr(0,44,"a Life");
 
     } while( myDisplay.nextPage() );
 }
@@ -87,8 +88,7 @@ void Display::showMainDisplay(std::vector<Sensor *> listSensor){
         for (Sensor *s : listSensor) {
             float v = s->getValue();
             
-            Serial.printf("\nValue for display: %.2f\n", v);
-
+            // Serial.printf("\nValue for display: %.2f\n", v);
             sprintf(buffer, "%.2f", v);
 
             // Displaying the name of the sensor 
@@ -115,12 +115,14 @@ void Display::displayLoop(std::vector<Sensor *> listSensor){
 
     switch(status){
         case 0:
+            /*
             Serial.println("");
             Serial.println("*------------------------------*");
             Serial.println("*         Test display !!!     *");
             Serial.println("*------------------------------*");
             Serial.println("");
-
+            */
+           
             showTestDisplay();
             status++;
 
@@ -128,11 +130,13 @@ void Display::displayLoop(std::vector<Sensor *> listSensor){
             break;
             
         case 1:
+            /*
             Serial.println("");
             Serial.println("*------------------------------*");
             Serial.println("*       Initial display !!!    *");
             Serial.println("*------------------------------*");
             Serial.println("");
+            */
 
             showInitialDisplay();
             status++;
@@ -141,11 +145,13 @@ void Display::displayLoop(std::vector<Sensor *> listSensor){
             break;
 
         case 2:
+            /*
             Serial.println("");
             Serial.println("*------------------------------*");
             Serial.println("*         Main display !!!     *");
             Serial.println("*------------------------------*");
             Serial.println("");
+            */
 
             showMainDisplay(listSensor);
 

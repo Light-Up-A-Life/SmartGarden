@@ -24,7 +24,8 @@ class GsmModule : public Sensor{
     float getSensorData() override;
     bool sendSMS(String msg);
     bool sendToServer(String msg);
-
+    String getClock();
+    String getPosition();
 
     /*void printLocalTime();
     void sendMessage(String);

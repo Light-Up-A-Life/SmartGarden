@@ -47,6 +47,10 @@ float Anemometer::getWindSpeedMph() {
   return WindSpeed;
 }
 
+float Anemometer::getWindSpeedMpers() {
+  return 0.447*getWindSpeedMph();
+}
+
 float Anemometer::getWindDirection() {
   float VaneValue = analogRead(Sensor::getPins().begin()->first);
   
@@ -66,7 +70,7 @@ float Anemometer::getWindDirection() {
 
 float Anemometer::getSensorData() {
   if (magnitude_type == "Wind_speed")
-    return getWindSpeedMph();
+    return getWindSpeedMpers();
   else 
     return getWindDirection();
 }

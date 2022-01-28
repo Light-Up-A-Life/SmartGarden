@@ -48,7 +48,13 @@ float Sensor::callbackMinute(){
   for(int i = 0; i < mesures_sec_.capacity()-1; i++){
     sum += mesures_sec_[i];
   }
-  float avg = sum/float(mesures_sec_.capacity());
+
+  float avg = -99999;
+  if (mesures_sec_.capacity()==0)
+    avg = sum;
+  else
+    avg = sum/float(mesures_sec_.capacity());
+    
   if(it_mes_min_ < mesures_min_.capacity()){
     mesures_min_[it_mes_min_] = avg;
     it_mes_min_++;
