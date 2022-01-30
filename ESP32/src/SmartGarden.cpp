@@ -14,12 +14,12 @@
 #include <queue>
 
 // Const Wifi
-/*
 const std::string wlan_ssid = "SFR_6608";
 const std::string wlan_pass = "2cwt45yriv2urm57trbx";
-*/
+/*
 const std::string wlan_ssid = "AlejoPhone";
 const std::string wlan_pass = "youdonthaveinternet";
+*/
 const uint16_t port = 10026;
 const char *host = "91.68.60.139";
 
@@ -137,7 +137,7 @@ void timeCount(void *parameter) {
     if (currentMillis - previousMillisMinute >= MINUTE_MS) {
       previousMillisMinute = currentMillis;
       sd_msg = (String)++minute;
-      server_msg = "Time(min)=" + (String)minute;
+      server_msg = "{\"Time\": " + (String)minute;
       eventCallback = 2;
       sec = 0;
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
@@ -146,8 +146,12 @@ void timeCount(void *parameter) {
     if (currentMillis - previousMillisHour >= HOUR_MS) {
       previousMillisHour = currentMillis;
       eventCallback = 3;
+<<<<<<< HEAD
       server_msg = "Time(hours)=" + (String)++hours;
       minute = 0;
+=======
+      server_msg = "{\"Time\": " + (String)minute;
+>>>>>>> 3342d1d43e785f494de1ffd331562d24b31ef248
       xQueueSend(queue, &eventCallback, portMAX_DELAY);
     }
     vTaskDelay(25 / portTICK_PERIOD_MS);
@@ -167,9 +171,11 @@ void eventCheck(void *parameter) {
 
       for (Sensor *s : listSensor) {
         s->read(1);
+        /*
         float v = s->getValue();
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
+        */
       }
       Serial.println("");
       
@@ -182,6 +188,7 @@ void eventCheck(void *parameter) {
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
         sd_msg = sd_msg + "," + String(v);
+<<<<<<< HEAD
         
         server_msg =
              server_msg + ",\"" + String(s->name.c_str()) + "\": " + String(v);
@@ -189,6 +196,10 @@ void eventCheck(void *parameter) {
         /*server_msg = 
              server_msg + "&" + String(s->name.c_str()) + "=" + String(v);
         */
+=======
+        server_msg =
+             server_msg + ",\"" + String(s->name.c_str()) + "\": " + String(v);
+>>>>>>> 3342d1d43e785f494de1ffd331562d24b31ef248
         // clientS.msg_tx[s->name.c_str()]= v;
       }
       server_msg = server_msg + "}";
@@ -196,6 +207,7 @@ void eventCheck(void *parameter) {
       Serial.println(sd_msg);
       Serial.println(server_msg);
       gsm.sendToServer(server_msg);
+<<<<<<< HEAD
 
       // Sending a I'm alive message every x minutes
       /*
@@ -205,14 +217,14 @@ void eventCheck(void *parameter) {
       }
       */ 
      
+=======
+>>>>>>> 3342d1d43e785f494de1ffd331562d24b31ef248
       /*
       if (wifiModule.connectToServer(host,port)){
         wifiModule.client.print(server_msg);
         wifiModule.client.stop();
       }
       */
-
-      // wifiModule.sendDataToGoogle(server_msg);
     } else if (option == 3) {
       
       Serial.printf("Hour passing \n");
@@ -225,7 +237,7 @@ void eventCheck(void *parameter) {
         Serial.printf("name %s \t", s->name.c_str());
         Serial.printf("value %0.3f \n", v);
         server_msg =
-            server_msg + "&" + String(s->name.c_str()) + "=" + String(v);
+             server_msg + ",\"" + String(s->name.c_str()) + "\": " + String(v);
       }
       */
       
@@ -354,6 +366,7 @@ void setup() {
     Serial.println("Connection to host failed");
   }
   */
+<<<<<<< HEAD
 
   queue = xQueueCreate(100, sizeof(int));
 
@@ -361,17 +374,23 @@ void setup() {
     Serial.println("Error creating the queue");
   }
 
+=======
+>>>>>>> 3342d1d43e785f494de1ffd331562d24b31ef248
   Serial.println("");
   Serial.println("*------------------------------*");
   Serial.println("*    Welcome to Smart Garden   *");
   Serial.println("*------------------------------*");
   Serial.println("");
 
+<<<<<<< HEAD
   // Final reset before launch 
   /*
   previousMillisSec = 0;
   previousMillisMinute = 0;
   previousMillisHour = 0;
+=======
+  queue = xQueueCreate(100, sizeof(int));
+>>>>>>> 3342d1d43e785f494de1ffd331562d24b31ef248
 
   secPassedEvent = false;
   minutePassedEvent = false;
